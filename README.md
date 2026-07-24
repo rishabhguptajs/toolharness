@@ -28,9 +28,13 @@ and — from the M4 milestone — an HTML dashboard.
 
 ## Status
 
-Milestones **M0** (data model + generic adapter) and **M1** (deterministic
-detectors, scoring, JSON report, golden fixtures) are implemented. See
-`agent_eval_harness/` and `tests/`.
+Milestones **M0** (data model + generic adapter), **M1** (deterministic
+detectors, scoring, JSON report, golden fixtures), and **M2** (injected-failure
+test agents + end-to-end integration test) are implemented. The M2 agents emit
+all eight failure modes through the real detector path; the five deterministic
+modes are caught today at precision/recall 1.0 on the controlled set, and the
+three judgment-heavy modes (M1/M4/M7) are emitted and xfail-marked until their
+detectors land in M3. See `agent_eval_harness/` and `tests/`.
 
 ## Quickstart
 
