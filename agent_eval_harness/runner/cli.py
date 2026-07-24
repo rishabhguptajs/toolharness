@@ -1,11 +1,12 @@
-"""`evalharness` command-line entry point (M1 surface).
+"""`evalharness` command-line entry point.
 
-    evalharness run <trace.json> [--adapter NAME] [--json OUT] [--fail-under N]
+    evalharness run <trace.json> [--adapter N] [--judge P] [--json OUT]
+                    [--html OUT] [--fail-under N]
+    evalharness compare <trace.json> <trace.json> ... --html OUT [--judge P]
 
-Parses a run into a NormalizedSession, runs the deterministic detectors, writes
-the JSON report, and prints the score vector. Exits non-zero when the composite
-falls below ``--fail-under`` (CI gate). Real CLI adapters and the HTML report
-land in later milestones.
+``run`` scores a single trace, writes JSON and/or the self-contained HTML
+dashboard, prints the score vector, and gates CI via ``--fail-under``.
+``compare`` scores several traces into one dashboard (agent A vs B on a task).
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from agent_eval_harness.core.model import NormalizedSession
 from agent_eval_harness.detectors import ALL_DETECTORS
 from agent_eval_harness.detectors.base import DetectorContext
 from agent_eval_harness.detectors.judge import build_judge
+from agent_eval_harness.report.html_report import write_html_dashboard, write_html_report
 from agent_eval_harness.report.json_report import report_dict, write_json_report
 from agent_eval_harness.scoring.engine import SessionScore, evaluate_session
 
@@ -44,6 +46,9 @@ def _cmd_run(args: argparse.Namespace) -> int:
 
     if args.json:
         write_json_report(session, score, args.json)
+    if args.html:
+        write_html_report(session, score, args.html)
+        print(f"wrote HTML dashboard -> {args.html}")
 
     if args.print_json:
         print(json.dumps(report_dict(session, score), indent=2))
@@ -61,24 +66,46 @@ def _cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_compare(args: argparse.Namespace) -> int:
+    pairs = []
+    for trace in args.traces:
+        score, session = evaluate_path(trace, args.adapter, args.judge, args.judge_cache)
+        pairs.append((session, score))
+        print(f"  {score.session_id:<28} composite={score.composite}")
+    write_html_dashboard(pairs, args.html)
+    print(f"wrote comparison dashboard ({len(pairs)} sessions) -> {args.html}")
+    return 0
+
+
+def _add_judge_args(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--adapter", default=None,
+                   help=f"force adapter; one of {default_registry.names()}")
+    p.add_argument("--judge", default=None,
+                   help="LLM-judge provider for hybrid modes: none (default), "
+                        "stub, groq, ollama, openrouter, nvidia")
+    p.add_argument("--judge-cache", default=None,
+                   help="directory to cache judge verdicts (reproducible re-runs)")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="evalharness")
     sub = parser.add_subparsers(dest="command", required=True)
 
     run = sub.add_parser("run", help="score a single run trace")
-    run.add_argument("trace", help="path to a run trace (generic JSON in M1)")
-    run.add_argument("--adapter", default=None,
-                     help=f"force adapter; one of {default_registry.names()}")
-    run.add_argument("--judge", default=None,
-                     help="LLM-judge provider for hybrid modes: none (default), "
-                          "stub, groq, ollama, openrouter, nvidia")
-    run.add_argument("--judge-cache", default=None,
-                     help="directory to cache judge verdicts (reproducible re-runs)")
+    run.add_argument("trace", help="path to a run trace (generic JSON)")
+    _add_judge_args(run)
     run.add_argument("--json", default=None, help="write the JSON report to this path")
+    run.add_argument("--html", default=None, help="write the HTML dashboard to this path")
     run.add_argument("--print-json", action="store_true", help="print full JSON to stdout")
     run.add_argument("--fail-under", type=int, default=None,
                      help="exit non-zero if composite score is below this threshold")
     run.set_defaults(func=_cmd_run)
+
+    compare = sub.add_parser("compare", help="score several traces into one dashboard")
+    compare.add_argument("traces", nargs="+", help="two or more run traces")
+    _add_judge_args(compare)
+    compare.add_argument("--html", required=True, help="write the comparison dashboard here")
+    compare.set_defaults(func=_cmd_compare)
     return parser
 
 

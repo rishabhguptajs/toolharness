@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tool-call reliability report</title>
+<style>
+  :root {
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --border:#30363d;
+    --text:#c9d1d9; --muted:#8b949e; --track:#21262d;
+    --good:#98c379; --warn:#e5c07b; --bad:#e06c75; --na:#5c6370; --accent:#58a6ff;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  a { color:var(--accent); }
+  .wrap { max-width:1100px; margin:0 auto; padding:24px 20px 80px; }
+  h1 { font-size:18px; margin:0 0 4px; font-weight:600; }
+  h2 { font-size:15px; margin:24px 0 10px; font-weight:600; color:#e6edf3; }
+  .sub { color:var(--muted); font-size:13px; }
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px; }
+  .row { display:flex; gap:20px; flex-wrap:wrap; }
+  .grow { flex:1 1 320px; }
+  code, pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  pre { background:var(--panel2); border:1px solid var(--border); border-radius:6px;
+    padding:10px; overflow-x:auto; margin:6px 0; font-size:12.5px; }
+
+  /* composite badge */
+  .composite { display:flex; align-items:baseline; gap:10px; }
+  .composite .big { font-size:40px; font-weight:700; line-height:1; }
+  .pill { display:inline-block; padding:1px 8px; border-radius:999px; font-size:11px;
+    font-weight:600; border:1px solid var(--border); }
+
+  /* score bars */
+  .bars { display:flex; flex-direction:column; gap:8px; }
+  .bar { display:grid; grid-template-columns:26px 150px 1fr 46px; align-items:center; gap:10px; }
+  .dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .barlabel { color:var(--muted); font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .track { display:block; height:9px; background:var(--track); border-radius:999px; overflow:hidden; }
+  .fill { display:block; height:9px; border-radius:999px; min-width:0; }
+  .scoreval { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+  .na { color:var(--na); }
+
+  /* filters */
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 12px; }
+  .chip { cursor:pointer; user-select:none; padding:3px 9px; border-radius:999px;
+    border:1px solid var(--border); background:var(--panel2); font-size:12px; color:var(--muted); }
+  .chip.active { color:#0d1117; font-weight:600; }
+  .chip.dim { opacity:.4; }
+
+  /* timeline */
+  .tl { display:flex; flex-direction:column; gap:6px; }
+  .call { border:1px solid var(--border); border-radius:8px; background:var(--panel);
+    border-left:3px solid var(--border); }
+  .call.fail { border-left-color:var(--bad); }
+  .call.warn { border-left-color:var(--warn); }
+  .call.clean { border-left-color:#2ea043; }
+  .callhead { display:flex; align-items:center; gap:10px; padding:9px 12px; cursor:pointer; }
+  .seq { color:var(--muted); font-variant-numeric:tabular-nums; font-size:12px; min-width:34px; }
+  .tool { font-family:ui-monospace,monospace; font-size:13px; }
+  .cap { color:var(--muted); font-size:11px; border:1px solid var(--border); border-radius:5px; padding:0 5px; }
+  .badges { margin-left:auto; display:flex; gap:4px; align-items:center; }
+  .badge { font-size:10.5px; font-weight:700; color:#0d1117; border-radius:5px; padding:1px 5px; }
+  .status { font-size:11px; padding:0 6px; border-radius:5px; border:1px solid var(--border); color:var(--muted); }
+  .status.err { color:var(--bad); border-color:var(--bad); }
+  .caret { color:var(--muted); transition:transform .12s ease; }
+  .call.open .caret { transform:rotate(90deg); }
+  .body { display:none; padding:2px 12px 12px 12px; border-top:1px solid var(--border); }
+  .call.open .body { display:block; }
+  .kv { color:var(--muted); font-size:12px; margin:8px 0 2px; text-transform:uppercase; letter-spacing:.04em; }
+  .finding { border:1px solid var(--border); border-left:3px solid var(--na); border-radius:6px;
+    padding:8px 10px; margin:6px 0; background:var(--panel2); }
+  .finding .meta { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:4px; }
+  .tag { font-size:10.5px; font-weight:700; border-radius:5px; padding:1px 6px; color:#0d1117; }
+  .muted { color:var(--muted); }
+  .ev { color:var(--muted); font-size:11.5px; font-family:ui-monospace,monospace; }
+  .llm { font-size:10px; border:1px solid var(--accent); color:var(--accent); border-radius:5px; padding:0 5px; }
+
+  /* compare */
+  .cmp { display:flex; gap:14px; flex-wrap:wrap; }
+  .cmpcard { flex:1 1 260px; }
+  .cmpcard .name { font-weight:600; margin-bottom:6px; font-family:ui-monospace,monospace; font-size:13px; }
+  hr.sep { border:0; border-top:1px solid var(--border); margin:30px 0; }
+  .radar text { fill:var(--muted); font-size:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tool-call reliability report</h1>
+  <div class="sub">
+    {{ views|length }} session{{ 's' if views|length != 1 else '' }} ·
+    scores are 0–100 per mode (higher = more reliable) · the 8-mode vector is primary
+  </div>
+
+  {% macro score_fill(score, applicable) -%}
+    {%- if not applicable or score is none -%}
+      width:0%;
+    {%- elif score >= 90 -%}
+      width:{{ score }}%;background:var(--good);
+    {%- elif score >= 70 -%}
+      width:{{ score }}%;background:var(--warn);
+    {%- else -%}
+      width:{{ score }}%;background:var(--bad);
+    {%- endif -%}
+  {%- endmacro %}
+
+  {% if compare %}
+  <h2>Compare</h2>
+  <div class="panel cmp">
+    {% for v in views %}
+    <div class="cmpcard">
+      <div class="name">{{ v.session_id }}</div>
+      <div class="composite" style="margin-bottom:8px;">
+        <span class="big">{{ v.composite if v.composite is not none else '—' }}</span>
+        <span class="sub">composite</span>
+      </div>
+      <div class="bars">
+        {% for s in v.scores %}
+        <div class="bar">
+          <span class="ev">{{ s.code }}</span>
+          <span class="barlabel">{{ s.label }}</span>
+          <span class="track"><span class="fill" style="{{ score_fill(s.score, s.applicable) }}"></span></span>
+          <span class="scoreval {{ 'na' if not s.applicable }}">{{ s.score if s.applicable else 'n/a' }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <hr class="sep">
+  {% endif %}
+
+  {% for v in views %}
+  <section class="session" id="s{{ loop.index }}">
+    <div class="panel">
+      <div class="row">
+        <div class="grow">
+          <h1 style="margin-bottom:6px;">{{ v.session_id }}
+            <span class="pill">{{ v.adapter }}</span></h1>
+          <div class="sub">task <code>{{ v.task_id }}</code> · {{ v.n_tool_calls }} tool calls ·
+            stop_reason <code>{{ v.stop_reason or 'n/a' }}</code></div>
+          {% if v.prompt %}<div class="sub" style="margin-top:6px;">“{{ v.prompt }}”</div>{% endif %}
+          <div class="composite" style="margin-top:14px;">
+            <span class="big" style="color:{% if v.composite is none %}var(--na){% elif v.composite >= 90 %}var(--good){% elif v.composite >= 70 %}var(--warn){% else %}var(--bad){% endif %}">
+              {{ v.composite if v.composite is not none else '—' }}</span>
+            <span class="sub">composite score</span>
+          </div>
+          <div class="bars" style="margin-top:14px;">
+            {% for s in v.scores %}
+            <div class="bar" title="confidence {{ s.confidence if s.confidence is not none else 'n/a' }}, {{ s.n_findings }} finding(s)">
+              <span class="dot" style="background:{{ s.color }}"></span>
+              <span class="barlabel">{{ s.code }} · {{ s.label }}</span>
+              <span class="track"><span class="fill" style="{{ score_fill(s.score, s.applicable) }}"></span></span>
+              <span class="scoreval {{ 'na' if not s.applicable }}">{{ s.score if s.applicable else 'n/a' }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="grow" style="max-width:260px;text-align:center;">
+          <svg class="radar" viewBox="0 0 {{ v.radar.size }} {{ v.radar.size }}" width="{{ v.radar.size }}" height="{{ v.radar.size }}" role="img" aria-label="8-mode score radar">
+            {% for r in v.radar.rings %}
+            <circle cx="{{ v.radar.cx }}" cy="{{ v.radar.cy }}" r="{{ r }}" fill="none" stroke="#30363d" stroke-width="1"></circle>
+            {% endfor %}
+            {% for a in v.radar.axes %}
+            <line x1="{{ v.radar.cx }}" y1="{{ v.radar.cy }}" x2="{{ a.x }}" y2="{{ a.y }}" stroke="#30363d" stroke-width="1"></line>
+            <text x="{{ a.lx }}" y="{{ a.ly }}" text-anchor="middle" dominant-baseline="middle">{{ a.code }}</text>
+            {% endfor %}
+            <polygon points="{{ v.radar.points }}" fill="rgba(88,166,255,0.22)" stroke="#58a6ff" stroke-width="1.5"></polygon>
+          </svg>
+          <div class="sub">0 at center · 100 at edge</div>
+        </div>
+      </div>
+    </div>
+
+    {% if v.session_findings %}
+    <h2>Session-level findings</h2>
+    <div class="panel">
+      {% for f in v.session_findings %}
+      <div class="finding" style="border-left-color:{{ f.verdict_color }}">
+        <div class="meta">
+          <span class="tag" style="background:{{ f.color }}">{{ f.mode_code }} {{ f.mode_label }}</span>
+          <span class="tag" style="background:{{ f.verdict_color }}">{{ f.verdict }}</span>
+          <span class="muted">confidence {{ f.confidence }}</span>
+          {% if f.llm_used %}<span class="llm">judge</span>{% endif %}
+        </div>
+        <div>{{ f.rationale }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <h2>Timeline</h2>
+    <div class="chips" data-filter="mode">
+      <span class="chip mode active" data-mode="ALL" style="background:#e6edf3">all modes</span>
+      {% for m in mode_meta %}
+      <span class="chip mode active" data-mode="{{ m.code }}" style="background:{{ m.color }}">{{ m.code }}</span>
+      {% endfor %}
+    </div>
+    <div class="chips" data-filter="verdict">
+      <span class="chip verdict active" data-verdict="ALL" style="background:#e6edf3">all</span>
+      <span class="chip verdict active" data-verdict="fail" style="background:{{ verdict_color['fail'] }}">fail</span>
+      <span class="chip verdict active" data-verdict="warn" style="background:{{ verdict_color['warn'] }}">warn</span>
+      <span class="chip verdict active" data-verdict="clean" style="background:#2ea043">clean</span>
+    </div>
+
+    <div class="tl">
+      {% for c in v.timeline %}
+      <div class="call {{ c.worst_verdict }}" data-modes="{{ c.mode_codes|join(',') }}" data-verdict="{{ c.worst_verdict }}">
+        <div class="callhead" onclick="this.parentNode.classList.toggle('open')">
+          <span class="seq">#{{ c.seq }}</span>
+          <span class="tool">{{ c.tool_name }}</span>
+          <span class="cap">{{ c.capability }}</span>
+          {% if c.result %}
+          <span class="status {{ 'err' if c.result.is_error }}">{{ c.result.status }}{% if c.result.error_class %} · {{ c.result.error_class }}{% endif %}</span>
+          {% endif %}
+          <span class="badges">
+            {% for f in c.findings %}
+            <span class="badge" style="background:{{ f.color }}" title="{{ f.mode_label }} · {{ f.verdict }}">{{ f.mode_code }}</span>
+            {% endfor %}
+            <span class="caret">›</span>
+          </span>
+        </div>
+        <div class="body">
+          {% if c.reasoning %}
+          <div class="kv">reasoning before call</div>
+          <div class="muted">{{ c.reasoning }}</div>
+          {% endif %}
+          <div class="kv">arguments</div>
+          <pre>{{ c.args_json }}</pre>
+          {% if c.result_content %}
+          <div class="kv">result</div>
+          <pre>{{ c.result_content }}</pre>
+          {% endif %}
+          {% if c.findings %}
+          <div class="kv">findings</div>
+          {% for f in c.findings %}
+          <div class="finding" style="border-left-color:{{ f.verdict_color }}">
+            <div class="meta">
+              <span class="tag" style="background:{{ f.color }}">{{ f.mode_code }} {{ f.mode_label }}</span>
+              <span class="tag" style="background:{{ f.verdict_color }}">{{ f.verdict }}</span>
+              <span class="muted">severity {{ f.severity }} · confidence {{ f.confidence }}</span>
+              {% if f.llm_used %}<span class="llm">judge</span>{% endif %}
+            </div>
+            <div>{{ f.rationale }}</div>
+            {% if f.evidence %}
+            <div class="ev" style="margin-top:4px;">evidence:
+              {% for e in f.evidence %}seq {{ e.seq }}{% if e.call_id %} ({{ e.call_id }}){% endif %}{% if e.note %} — {{ e.note }}{% endif %}{{ '; ' if not loop.last }}{% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="muted" style="margin-top:8px;">No findings — this call passed every applicable check.</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% if not loop.last %}<hr class="sep">{% endif %}
+  {% endfor %}
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('section.session').forEach(function (sec) {
+    var modeChips = sec.querySelectorAll('.chip.mode');
+    var verdictChips = sec.querySelectorAll('.chip.verdict');
+    var calls = sec.querySelectorAll('.call');
+
+    function activeSet(chips, attr, allKey) {
+      var all = Array.prototype.find.call(chips, function (c) { return c.dataset[attr] === allKey; });
+      if (all && all.classList.contains('active')) return null; // null = no filter
+      var set = {};
+      chips.forEach(function (c) {
+        if (c.dataset[attr] !== allKey && c.classList.contains('active')) set[c.dataset[attr]] = true;
+      });
+      return set;
+    }
+
+    function apply() {
+      var modeSet = activeSet(modeChips, 'mode', 'ALL');
+      var verdictSet = activeSet(verdictChips, 'verdict', 'ALL');
+      calls.forEach(function (call) {
+        var modes = (call.dataset.modes || '').split(',').filter(Boolean);
+        var verdict = call.dataset.verdict;
+        var modeOk = !modeSet || modes.some(function (m) { return modeSet[m]; });
+        var verdictOk = !verdictSet || verdictSet[verdict];
+        call.style.display = (modeOk && verdictOk) ? '' : 'none';
+      });
+    }
+
+    function wire(chips, attr, allKey) {
+      chips.forEach(function (chip) {
+        chip.addEventListener('click', function () {
+          if (chip.dataset[attr] === allKey) {
+            chips.forEach(function (c) { c.classList.add('active'); c.classList.remove('dim'); });
+          } else {
+            chip.classList.toggle('active');
+            chip.classList.toggle('dim');
+            var all = Array.prototype.find.call(chips, function (c) { return c.dataset[attr] === allKey; });
+            var anyOff = Array.prototype.some.call(chips, function (c) {
+              return c.dataset[attr] !== allKey && !c.classList.contains('active');
+            });
+            if (all) { all.classList.toggle('active', !anyOff); all.classList.toggle('dim', anyOff); }
+          }
+          apply();
+        });
+      });
+    }
+    wire(modeChips, 'mode', 'ALL');
+    wire(verdictChips, 'verdict', 'ALL');
+  });
+})();
+</script>
+</body>
+</html>

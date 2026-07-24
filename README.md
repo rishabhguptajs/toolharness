@@ -28,12 +28,22 @@ and — from the M4 milestone — an HTML dashboard.
 
 ## Status
 
-Milestones **M0**–**M3** are implemented: data model + generic adapter (M0);
+Milestones **M0**–**M4** are implemented: data model + generic adapter (M0);
 deterministic detectors, scoring, JSON report, golden fixtures (M1);
 injected-failure test agents + end-to-end integration (M2); the **LLM-judge layer
-and the three hybrid modes** M1/M4/M7 (M3). All eight modes now have detectors and
-golden fixtures, and the controlled injected-failure set is caught at
-precision/recall 1.0. See `agent_eval_harness/` and `tests/`.
+and the three hybrid modes** M1/M4/M7 (M3); and a **self-contained HTML dashboard**
+(M4). All eight modes have detectors and golden fixtures, and the controlled
+injected-failure set is caught at precision/recall 1.0. See `agent_eval_harness/`
+and `tests/`.
+
+### HTML dashboard
+
+`evalharness run <trace> --html report.html` writes a single self-contained file
+(inline CSS/JS, no external requests) with the 8-mode score bars + an SVG radar, a
+tool-call timeline color-coded by the modes each call triggered, click-to-expand
+drill-down (reasoning, arguments, result, and every finding's rationale + evidence
+trail), and mode/verdict filters. `evalharness compare a.json b.json --html
+cmp.html` renders several sessions into one page for agent-A-vs-B comparison.
 
 ### The judge
 

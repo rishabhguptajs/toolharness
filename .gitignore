@@ -9,3 +9,4 @@ build/
 dist/
 *.report.json
 .judge_cache/
+.preview/
