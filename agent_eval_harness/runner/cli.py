@@ -141,6 +141,7 @@ def _cmd_live(args: argparse.Namespace) -> int:
         timeout=args.timeout,
         trace_path=args.save_trace,
         keep_workdir=args.keep_workdir,
+        agent_args=args.agent_arg or [],
     )
     where = "sandbox" if result.sandboxed else "in-place"
     print(f"ran '{result.metadata['command']}' [{where}] "
@@ -225,6 +226,9 @@ def build_parser() -> argparse.ArgumentParser:
                       help="write the raw captured trace to this path")
     live.add_argument("--keep-workdir", action="store_true",
                       help="do not delete the sandbox workdir after the run")
+    live.add_argument("--agent-arg", action="append", dest="agent_arg", default=None,
+                      metavar="ARG",
+                      help="extra flag to append to the agent command (repeatable)")
     live.add_argument("--judge", default=None, help="LLM-judge provider (see `run --help`)")
     live.add_argument("--judge-cache", default=None, help="judge verdict cache dir")
     live.add_argument("--json", default=None, help="write the JSON report to this path")

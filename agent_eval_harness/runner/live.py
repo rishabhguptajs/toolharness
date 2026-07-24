@@ -43,8 +43,15 @@ _SANDBOX_IGNORE = shutil.ignore_patterns(
 class InvocationProfile:
     """How to invoke one agent CLI so its output is parseable by ``adapter``.
 
-    The command is assembled as ``[binary, *pre_args, prompt, *post_args]`` — the
-    prompt is always passed as a single argv element, never shell-interpolated.
+    The command is assembled as
+    ``[binary, *pre_args, prompt, *post_args, *(sandbox_args if sandboxed), *extra]``
+    — the prompt is always passed as a single argv element, never shell-interpolated.
+
+    ``sandbox_args`` are the flags that let the agent act *autonomously* (auto-accept
+    edits, run commands without approval). They are applied **only inside the
+    throwaway temp-dir sandbox**, where the copy is the safety boundary; an
+    ``--in-place`` run omits them so the agent's own permission prompts still gate
+    edits to the user's real repo.
     """
 
     name: str
@@ -52,13 +59,18 @@ class InvocationProfile:
     binary: str
     pre_args: tuple[str, ...] = ()
     post_args: tuple[str, ...] = ()
+    sandbox_args: tuple[str, ...] = ()
 
-    def build_command(self, prompt: str) -> list[str]:
-        return [self.binary, *self.pre_args, prompt, *self.post_args]
+    def build_command(
+        self, prompt: str, *, sandboxed: bool = False, extra_args: Sequence[str] = ()
+    ) -> list[str]:
+        autonomy = list(self.sandbox_args) if sandboxed else []
+        return [self.binary, *self.pre_args, prompt, *self.post_args, *autonomy, *extra_args]
 
 
 # The three profiles whose adapters shipped in M5. Gemini is intentionally absent
-# (auth-blocked in M5); add it here once the GeminiAdapter lands.
+# (auth-blocked in M5); add it here once the GeminiAdapter lands. The ``sandbox_args``
+# grant headless autonomy and are only used when running in the sandbox.
 PROFILES: dict[str, InvocationProfile] = {
     "claude-code": InvocationProfile(
         name="claude-code",
@@ -66,6 +78,7 @@ PROFILES: dict[str, InvocationProfile] = {
         binary="claude",
         pre_args=("-p",),
         post_args=("--output-format", "stream-json", "--verbose"),
+        sandbox_args=("--permission-mode", "bypassPermissions"),
     ),
     "cursor": InvocationProfile(
         name="cursor",
@@ -73,12 +86,14 @@ PROFILES: dict[str, InvocationProfile] = {
         binary="cursor-agent",
         pre_args=("-p",),
         post_args=("--output-format", "stream-json"),
+        sandbox_args=("--force",),
     ),
     "codex": InvocationProfile(
         name="codex",
         adapter="codex",
         binary="codex",
         pre_args=("exec", "--json"),
+        sandbox_args=("--dangerously-bypass-approvals-and-sandbox",),
     ),
 }
 
@@ -164,6 +179,7 @@ def run_live(
     timeout: float | None = 600.0,
     trace_path: str | Path | None = None,
     keep_workdir: bool = False,
+    agent_args: Sequence[str] = (),
     command_runner: CommandRunner | None = None,
 ) -> LiveResult:
     """Invoke an agent CLI on a task repo and parse the captured trace.
@@ -187,7 +203,9 @@ def run_live(
     workdir, created = prepare_workdir(repo_path, sandbox=sandbox)
     cleanup_root = workdir.parent if (created and not keep_workdir) else None
     try:
-        command = prof.build_command(task.prompt)
+        command = prof.build_command(
+            task.prompt, sandboxed=created, extra_args=agent_args
+        )
         returncode, stdout, stderr, timed_out = run_cmd(command, workdir, timeout)
 
         if trace_path is not None:

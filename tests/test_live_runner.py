@@ -60,6 +60,21 @@ def test_build_command_places_prompt_as_single_arg():
     assert cmd.count("add a power() function") == 1
 
 
+def test_sandbox_args_only_applied_when_sandboxed():
+    prof = PROFILES["claude-code"]
+    base = prof.build_command("x", sandboxed=False)
+    autonomous = prof.build_command("x", sandboxed=True)
+    # Autonomy flags appear only inside the sandbox.
+    assert "--permission-mode" not in base
+    assert autonomous[-2:] == ["--permission-mode", "bypassPermissions"]
+
+
+def test_extra_args_are_appended():
+    cmd = PROFILES["codex"].build_command("x", sandboxed=True, extra_args=["-c", "model=o3"])
+    assert cmd[-2:] == ["-c", "model=o3"]
+    assert "--dangerously-bypass-approvals-and-sandbox" in cmd
+
+
 def test_codex_profile_has_no_post_args():
     assert PROFILES["codex"].build_command("x") == ["codex", "exec", "--json", "x"]
 
