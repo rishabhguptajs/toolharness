@@ -18,23 +18,29 @@ from pathlib import Path
 from agent_eval_harness.adapters import default_registry
 from agent_eval_harness.adapters.base import RunSource
 from agent_eval_harness.core.model import NormalizedSession
-from agent_eval_harness.detectors import DETERMINISTIC_DETECTORS
+from agent_eval_harness.detectors import ALL_DETECTORS
+from agent_eval_harness.detectors.base import DetectorContext
+from agent_eval_harness.detectors.judge import build_judge
 from agent_eval_harness.report.json_report import report_dict, write_json_report
 from agent_eval_harness.scoring.engine import SessionScore, evaluate_session
 
 
 def evaluate_path(
-    path: str | Path, adapter: str | None = None
+    path: str | Path,
+    adapter: str | None = None,
+    judge: str | None = None,
+    judge_cache: str | Path | None = None,
 ) -> tuple[SessionScore, NormalizedSession]:
     aux = {"adapter": adapter} if adapter else {}
     source = RunSource(kind="generic", path=Path(path), aux=aux)
     session = default_registry.parse(source)
-    score = evaluate_session(session, DETERMINISTIC_DETECTORS)
+    ctx = DetectorContext(judge=build_judge(judge, cache_dir=judge_cache))
+    score = evaluate_session(session, ALL_DETECTORS, ctx)
     return score, session
 
 
 def _cmd_run(args: argparse.Namespace) -> int:
-    score, session = evaluate_path(args.trace, args.adapter)
+    score, session = evaluate_path(args.trace, args.adapter, args.judge, args.judge_cache)
 
     if args.json:
         write_json_report(session, score, args.json)
@@ -63,6 +69,11 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("trace", help="path to a run trace (generic JSON in M1)")
     run.add_argument("--adapter", default=None,
                      help=f"force adapter; one of {default_registry.names()}")
+    run.add_argument("--judge", default=None,
+                     help="LLM-judge provider for hybrid modes: none (default), "
+                          "stub, groq, ollama, openrouter, nvidia")
+    run.add_argument("--judge-cache", default=None,
+                     help="directory to cache judge verdicts (reproducible re-runs)")
     run.add_argument("--json", default=None, help="write the JSON report to this path")
     run.add_argument("--print-json", action="store_true", help="print full JSON to stdout")
     run.add_argument("--fail-under", type=int, default=None,

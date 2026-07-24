@@ -15,7 +15,7 @@ from agent_eval_harness.test_agents.agents import (
 from agent_eval_harness.test_agents.harness import MockToolEnv, TraceRecorder
 from agent_eval_harness.test_agents.matrix import (
     DETERMINISTIC_MODES,
-    JUDGE_PENDING_MODES,
+    HYBRID_MODES,
     Metrics,
     RunRecord,
     fired_modes,
@@ -32,7 +32,7 @@ __all__ = [
     "MockToolEnv",
     "TraceRecorder",
     "DETERMINISTIC_MODES",
-    "JUDGE_PENDING_MODES",
+    "HYBRID_MODES",
     "Metrics",
     "RunRecord",
     "fired_modes",

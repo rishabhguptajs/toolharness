@@ -8,3 +8,4 @@ __pycache__/
 build/
 dist/
 *.report.json
+.judge_cache/

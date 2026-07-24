@@ -2,14 +2,13 @@
 summarize precision/recall over the controlled set.
 
 Each agent run is parsed by the ``GenericToolTraceAdapter`` and scored by the
-deterministic detectors — the same code path production traces take. A mode is
-considered "fired" when it is applicable and scored below 100.
+detectors — the same code path production traces take. A mode is considered
+"fired" when it is applicable and scored below 100.
 
-The controlled set has ground truth: a clean run should fire nothing, and an
-injected run should fire exactly its target mode. We report metrics only over the
-modes whose detectors exist today (the deterministic set); the judgment-heavy
-modes (M1/M4/M7) are emitted by the agents but their detectors land in M3, so
-they are tracked separately as ``judge_pending`` rather than counted as misses.
+As of M3 all eight modes have detectors, so the default is ``ALL_DETECTORS`` and
+the whole controlled set is graded. The judgment-heavy modes (M1/M4/M7) are
+caught by their deterministic anchors here; a judge can be passed to additionally
+exercise the escalation path, but the controlled set does not require one.
 """
 
 from __future__ import annotations
@@ -20,11 +19,11 @@ from typing import Any
 from agent_eval_harness.adapters.base import RunSource
 from agent_eval_harness.adapters.generic import GenericToolTraceAdapter
 from agent_eval_harness.core.findings import FailureMode
-from agent_eval_harness.detectors import DETERMINISTIC_DETECTORS
+from agent_eval_harness.detectors import ALL_DETECTORS, Detector, DetectorContext
 from agent_eval_harness.scoring.engine import SessionScore, evaluate_session
 from agent_eval_harness.test_agents.agents import all_agents
 
-# Modes with a deterministic detector today (M1 milestone).
+# Modes with a purely deterministic detector.
 DETERMINISTIC_MODES: frozenset[FailureMode] = frozenset(
     {
         FailureMode.WRONG_ARGS,
@@ -34,8 +33,8 @@ DETERMINISTIC_MODES: frozenset[FailureMode] = frozenset(
         FailureMode.UNSAFE_CALL,
     }
 )
-# Modes the agents inject but whose detectors arrive with the LLM judge in M3.
-JUDGE_PENDING_MODES: frozenset[FailureMode] = frozenset(
+# Modes handled by the hybrid (heuristic-anchored + judge) detectors added in M3.
+HYBRID_MODES: frozenset[FailureMode] = frozenset(
     {
         FailureMode.WRONG_TOOL,
         FailureMode.IGNORED_OUTPUT,
@@ -46,11 +45,17 @@ JUDGE_PENDING_MODES: frozenset[FailureMode] = frozenset(
 _ADAPTER = GenericToolTraceAdapter()
 
 
-def score_agent_run(agent: Any, inject: FailureMode | None) -> SessionScore:
+def score_agent_run(
+    agent: Any,
+    inject: FailureMode | None,
+    detectors: list[Detector] | None = None,
+    judge: Any = None,
+) -> SessionScore:
     """Build one agent trace and score it through the production pipeline."""
     trace = agent.run(inject)
     session = _ADAPTER.parse(RunSource(kind="generic", data=trace))
-    return evaluate_session(session, DETERMINISTIC_DETECTORS)
+    ctx = DetectorContext(judge=judge)
+    return evaluate_session(session, detectors or ALL_DETECTORS, ctx)
 
 
 def fired_modes(score: SessionScore) -> set[FailureMode]:
@@ -70,17 +75,15 @@ class RunRecord:
     fired: set[FailureMode]
     score: SessionScore
 
-    @property
-    def deterministic_target(self) -> bool:
-        return self.target in DETERMINISTIC_MODES
 
-
-def run_controlled_set() -> list[RunRecord]:
+def run_controlled_set(
+    detectors: list[Detector] | None = None, judge: Any = None
+) -> list[RunRecord]:
     """Run every agent clean plus once per injectable mode."""
     records: list[RunRecord] = []
     for agent in all_agents():
         for inject in (None, *sorted(agent.injectable, key=lambda m: m.value)):
-            score = score_agent_run(agent, inject)
+            score = score_agent_run(agent, inject, detectors, judge)
             records.append(
                 RunRecord(
                     agent=agent.name,
@@ -112,29 +115,26 @@ class Metrics:
 
 
 def precision_recall(records: list[RunRecord]) -> Metrics:
-    """Precision/recall over the deterministic modes only.
+    """Precision/recall over all eight modes on the controlled set.
 
-    * A clean run that fires any deterministic mode is a false positive.
-    * An injected deterministic run that fires its target is a true positive; if
-      it fails to fire, a false negative.
-    * A deterministic mode firing on a run where it was not the target (clean or a
-      different injection) is a cross-fire / false positive.
+    * A clean run that fires anything is a false positive.
+    * An injected run that fires its target is a true positive; failing to fire is
+      a false negative.
+    * Any mode firing on a run where it was not the target is a cross-fire /
+      false positive.
     """
     m = Metrics()
     for r in records:
-        det_fired = r.fired & DETERMINISTIC_MODES
         if r.inject is None:
-            for mode in det_fired:
+            for mode in r.fired:
                 m.false_positives += 1
                 m.cross_fires.append(f"{r.agent} clean -> {mode.value}")
             continue
-        if r.deterministic_target:
-            if r.target in det_fired:
-                m.true_positives += 1
-            else:
-                m.false_negatives += 1
-        # Any deterministic mode that fired but was not the target is a cross-fire.
-        for mode in det_fired:
+        if r.target in r.fired:
+            m.true_positives += 1
+        else:
+            m.false_negatives += 1
+        for mode in r.fired:
             if mode is not r.target:
                 m.false_positives += 1
                 m.cross_fires.append(
@@ -148,15 +148,12 @@ def format_report(records: list[RunRecord], metrics: Metrics) -> str:
     for r in records:
         label = r.inject.value if r.inject else "clean"
         fired = ", ".join(sorted(m.value for m in r.fired)) or "-"
-        tag = "" if r.inject is None or r.deterministic_target else "  [judge-pending, M3]"
         lines.append(
-            f"  {r.agent:<22} {label:<22} composite={r.score.composite}"
-            f"  fired: {fired}{tag}"
+            f"  {r.agent:<22} {label:<22} composite={r.score.composite}  fired: {fired}"
         )
     lines += [
         "",
-        f"Deterministic modes: precision={metrics.precision:.2f} "
-        f"recall={metrics.recall:.2f} "
+        f"All modes: precision={metrics.precision:.2f} recall={metrics.recall:.2f} "
         f"(tp={metrics.true_positives} fn={metrics.false_negatives} "
         f"fp={metrics.false_positives})",
     ]

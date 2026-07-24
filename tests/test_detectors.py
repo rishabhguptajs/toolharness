@@ -7,12 +7,16 @@ from __future__ import annotations
 import pytest
 
 from agent_eval_harness.core.findings import FailureMode
-from agent_eval_harness.detectors import DETERMINISTIC_DETECTORS
+from agent_eval_harness.detectors import ALL_DETECTORS, DETERMINISTIC_DETECTORS
 from agent_eval_harness.scoring.engine import SessionScore, evaluate_session
 
 
 def run(session) -> SessionScore:
     return evaluate_session(session, DETERMINISTIC_DETECTORS)
+
+
+def run_all(session) -> SessionScore:
+    return evaluate_session(session, ALL_DETECTORS)
 
 
 def assert_only_mode_fails(score: SessionScore, target: FailureMode):
@@ -51,6 +55,31 @@ def test_clean_pass_scores_100(session_loader):
 def test_injected_failure_is_caught(session_loader, fixture, mode):
     score = run(session_loader(fixture))
     assert_only_mode_fails(score, mode)
+
+
+# --- hybrid-mode fail fixtures (M3, caught by deterministic anchors) ---------------
+
+@pytest.mark.parametrize(
+    "fixture,mode",
+    [
+        ("m1_wrong_tool_fail", FailureMode.WRONG_TOOL),
+        ("m4_ignored_output_fail", FailureMode.IGNORED_OUTPUT),
+        ("m7_premature_stop_fail", FailureMode.PREMATURE_STOP),
+    ],
+)
+def test_hybrid_failure_is_caught(session_loader, fixture, mode):
+    # Full detector set, no judge: the M1/M4/M7 anchors must fire on their own.
+    score = run_all(session_loader(fixture))
+    assert_only_mode_fails(score, mode)
+    assert all(not f.llm_used for f in score.mode_scores[mode].findings)
+
+
+def test_clean_pass_scores_100_with_all_detectors(session_loader):
+    score = run_all(session_loader("clean_pass"))
+    assert score.composite == 100
+    for ms in score.mode_scores.values():
+        if ms.applicable:
+            assert ms.score == 100
 
 
 # --- pass fixtures for modes with a justification path ----------------------------

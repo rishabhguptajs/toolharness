@@ -1,13 +1,13 @@
-"""M2 integration tests: the injected-failure agents, end to end.
+"""Injected-failure agents, end to end.
 
-Each agent runs through the real pipeline (generic adapter -> deterministic
-detectors -> scoring). We assert three things:
+Each agent runs through the real pipeline (generic adapter -> detectors ->
+scoring). As of M3 all eight modes have detectors, so:
 
   * clean runs fire nothing (precision baseline);
-  * each deterministic injection is caught with no cross-fire (recall);
-  * the agents actually *emit* all eight modes — the three judgment-heavy ones
-    (M1/M4/M7) are structurally present now and marked xfail until their M3
-    detectors exist, so those cases flip to passing automatically in M3.
+  * every injection is caught with no cross-fire (recall);
+  * the agents emit all eight modes, and the three judgment-heavy ones (M1/M4/M7)
+    are caught here by their deterministic anchors — the judge escalation path is
+    exercised separately in ``test_judge.py``.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import pytest
 from agent_eval_harness.core.findings import FailureMode
 from agent_eval_harness.test_agents import (
     DETERMINISTIC_MODES,
-    JUDGE_PENDING_MODES,
+    HYBRID_MODES,
     all_agents,
     fired_modes,
     precision_recall,
@@ -25,7 +25,7 @@ from agent_eval_harness.test_agents import (
     score_agent_run,
 )
 
-AGENTS = {a.name: a for a in all_agents()}
+ALL_INJECTABLE = DETERMINISTIC_MODES | HYBRID_MODES
 
 
 def _agent_for(mode: FailureMode):
@@ -45,11 +45,11 @@ def test_clean_run_fires_nothing(agent):
     assert fired_modes(score) == set()
 
 
-# --- deterministic injections (caught today) --------------------------------------
+# --- every injection is caught with no cross-fire ---------------------------------
 
 
-@pytest.mark.parametrize("mode", sorted(DETERMINISTIC_MODES, key=lambda m: m.value))
-def test_deterministic_injection_is_caught_without_crossfire(mode):
+@pytest.mark.parametrize("mode", sorted(ALL_INJECTABLE, key=lambda m: m.value))
+def test_injection_is_caught_without_crossfire(mode):
     agent = _agent_for(mode)
     score = score_agent_run(agent, mode)
     fired = fired_modes(score)
@@ -58,23 +58,13 @@ def test_deterministic_injection_is_caught_without_crossfire(mode):
     assert score.mode_scores[mode].score < 100
 
 
-# --- judgment-heavy injections (detectors land in M3) -----------------------------
-
-
-@pytest.mark.parametrize("mode", sorted(JUDGE_PENDING_MODES, key=lambda m: m.value))
-@pytest.mark.xfail(reason="detector lands in M3 (LLM judge layer)", strict=False)
-def test_judge_pending_injection_is_caught(mode):
-    agent = _agent_for(mode)
-    score = score_agent_run(agent, mode)
-    assert mode in fired_modes(score)
-
-
-@pytest.mark.parametrize("mode", sorted(JUDGE_PENDING_MODES, key=lambda m: m.value))
-def test_judge_pending_injection_does_not_false_fire_deterministically(mode):
-    """Until M3 they must stay silent, not trip a deterministic detector."""
-    agent = _agent_for(mode)
-    score = score_agent_run(agent, mode)
-    assert fired_modes(score) & DETERMINISTIC_MODES == set()
+def test_hybrid_modes_are_caught_by_deterministic_anchors_without_a_judge():
+    # No judge wired: the M1/M4/M7 anchors alone must catch these.
+    for mode in sorted(HYBRID_MODES, key=lambda m: m.value):
+        score = score_agent_run(_agent_for(mode), mode, judge=None)
+        findings = score.mode_scores[mode].findings
+        assert findings, f"{mode.value} not caught heuristically"
+        assert all(not f.llm_used for f in findings), f"{mode.value} needed a judge"
 
 
 # --- the agents emit every one of the eight modes ---------------------------------
@@ -129,7 +119,7 @@ def test_controlled_set_precision_recall_is_perfect():
     metrics = precision_recall(run_controlled_set())
     assert metrics.recall == 1.0, metrics.cross_fires
     assert metrics.precision == 1.0, metrics.cross_fires
-    assert metrics.true_positives == len(DETERMINISTIC_MODES)
+    assert metrics.true_positives == len(ALL_INJECTABLE)
     assert metrics.false_positives == 0
     assert metrics.false_negatives == 0
 

@@ -12,14 +12,14 @@ produced by each adapter.
 
 | # | Mode | Detection |
 |---|------|-----------|
-| M1 | Wrong tool selected | LLM-judge + heuristic *(M3 milestone)* |
+| M1 | Wrong tool selected | heuristic anti-patterns + LLM-judge |
 | M2 | Wrong/malformed arguments | deterministic (schema + result error) |
 | M3 | Hallucinated tool call | deterministic (registry membership) |
-| M4 | Ignored tool output | heuristic + LLM-judge *(M3 milestone)* |
+| M4 | Ignored tool output | heuristic anchors + LLM-judge |
 | M5 | Redundant/repeated calls | deterministic (state tracker) |
 | M6 | Missing verification step | rule + LLM-judge on "warranted" |
-| M7 | Premature stop | reference rule + LLM-judge *(M3 milestone)* |
-| M8 | Unsafe/destructive call w/o justification | deterministic ruleset + judge |
+| M7 | Premature stop | reference rule + heuristic + LLM-judge |
+| M8 | Unsafe/destructive call w/o justification | deterministic ruleset + judge (downgrade-only) |
 
 Each mode is scored **0–100**; the primary output is the 8-mode vector plus a
 weighted **composite** (safety weighted highest). Two levels of detail:
@@ -28,13 +28,31 @@ and — from the M4 milestone — an HTML dashboard.
 
 ## Status
 
-Milestones **M0** (data model + generic adapter), **M1** (deterministic
-detectors, scoring, JSON report, golden fixtures), and **M2** (injected-failure
-test agents + end-to-end integration test) are implemented. The M2 agents emit
-all eight failure modes through the real detector path; the five deterministic
-modes are caught today at precision/recall 1.0 on the controlled set, and the
-three judgment-heavy modes (M1/M4/M7) are emitted and xfail-marked until their
-detectors land in M3. See `agent_eval_harness/` and `tests/`.
+Milestones **M0**–**M3** are implemented: data model + generic adapter (M0);
+deterministic detectors, scoring, JSON report, golden fixtures (M1);
+injected-failure test agents + end-to-end integration (M2); the **LLM-judge layer
+and the three hybrid modes** M1/M4/M7 (M3). All eight modes now have detectors and
+golden fixtures, and the controlled injected-failure set is caught at
+precision/recall 1.0. See `agent_eval_harness/` and `tests/`.
+
+### The judge
+
+The hybrid modes have deterministic anchors that catch the clear cases with no
+model call; ambiguous cases escalate to a **provider-agnostic LLM judge**. The
+judge is deliberately independent of the agents under test (never Claude, GPT, or
+Gemini) to avoid self-preference bias. One `OpenAICompatibleJudge` covers Groq,
+OpenRouter, NVIDIA NIM, and local Ollama — a provider is just
+`(base_url, model, api_key_env)`; the default is **Groq + Kimi K2**. Verdicts are
+`temperature=0` + seeded and cached on disk, so re-scoring a session is
+reproducible and free.
+
+```bash
+# heuristic-only (no network, default):
+evalharness run tests/fixtures/m1_wrong_tool_fail.json
+# with the judge escalation path (needs GROQ_API_KEY):
+export GROQ_API_KEY=...
+evalharness run <trace.json> --judge groq --judge-cache .judge_cache
+```
 
 ## Quickstart
 

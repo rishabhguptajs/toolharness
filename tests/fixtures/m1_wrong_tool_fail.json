@@ -1,0 +1,20 @@
+{
+  "session_id": "m1_wrong_tool_fail",
+  "adapter": "generic",
+  "stop_reason": "completed",
+  "task": { "task_id": "show-file", "prompt": "Show me the contents of src/app.py." },
+  "available_tools": [
+    { "name": "read_file", "capability": "FILE_READ",
+      "schema": { "required": ["path"], "properties": { "path": { "type": "string" } } } },
+    { "name": "bash", "capability": "SHELL_EXEC",
+      "schema": { "required": ["command"] } }
+  ],
+  "events": [
+    { "type": "user_message", "text": "Show me the contents of src/app.py." },
+    { "type": "agent_message", "text": "Let me print the file." },
+    { "type": "tool_call", "call_id": "c1", "tool_name": "bash",
+      "arguments": { "command": "cat src/app.py" } },
+    { "type": "tool_result", "call_id": "c1", "status": "ok", "content": "def paginate(...): ..." },
+    { "type": "agent_stop", "text": "Here are the contents of src/app.py." }
+  ]
+}
