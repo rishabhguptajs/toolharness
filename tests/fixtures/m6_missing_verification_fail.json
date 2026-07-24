@@ -1,0 +1,18 @@
+{
+  "session_id": "m6_missing_verification_fail",
+  "adapter": "generic",
+  "stop_reason": "completed",
+  "task": { "task_id": "add-feature", "prompt": "Add a helper to utils.py." },
+  "metadata": { "has_build_system": true },
+  "available_tools": [
+    { "name": "edit_file", "capability": "FILE_EDIT", "schema": { "required": ["path"] } }
+  ],
+  "events": [
+    { "type": "user_message", "text": "Add a helper to utils.py." },
+    { "type": "agent_message", "text": "Adding the helper." },
+    { "type": "tool_call", "call_id": "c1", "tool_name": "edit_file",
+      "arguments": { "path": "src/utils.py", "old": "", "new": "def helper(): return 1" } },
+    { "type": "tool_result", "call_id": "c1", "status": "ok", "content": "edited" },
+    { "type": "agent_stop", "text": "Added the helper." }
+  ]
+}

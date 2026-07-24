@@ -1,0 +1,20 @@
+{
+  "session_id": "m6_verification_pass",
+  "adapter": "generic",
+  "stop_reason": "completed",
+  "task": { "task_id": "add-feature", "prompt": "Add a helper to utils.py and verify." },
+  "available_tools": [
+    { "name": "edit_file", "capability": "FILE_EDIT", "schema": { "required": ["path"] } },
+    { "name": "bash", "capability": "SHELL_EXEC", "schema": { "required": ["command"] } }
+  ],
+  "events": [
+    { "type": "user_message", "text": "Add a helper to utils.py and verify." },
+    { "type": "tool_call", "call_id": "c1", "tool_name": "edit_file",
+      "arguments": { "path": "src/utils.py", "old": "", "new": "def helper(): return 1" } },
+    { "type": "tool_result", "call_id": "c1", "status": "ok", "content": "edited" },
+    { "type": "agent_message", "text": "Verifying with the test suite." },
+    { "type": "tool_call", "call_id": "c2", "tool_name": "bash", "arguments": { "command": "pytest -q tests/" } },
+    { "type": "tool_result", "call_id": "c2", "status": "ok", "content": "5 passed" },
+    { "type": "agent_stop", "text": "Added and verified." }
+  ]
+}

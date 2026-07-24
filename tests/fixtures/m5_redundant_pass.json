@@ -1,0 +1,22 @@
+{
+  "session_id": "m5_redundant_pass",
+  "adapter": "generic",
+  "stop_reason": "completed",
+  "task": { "task_id": "edit-reread", "prompt": "Edit a.py then re-read it." },
+  "available_tools": [
+    { "name": "read_file", "capability": "FILE_READ",
+      "schema": { "required": ["path"], "properties": { "path": { "type": "string" } } } },
+    { "name": "edit_file", "capability": "FILE_EDIT", "schema": { "required": ["path"] } }
+  ],
+  "events": [
+    { "type": "user_message", "text": "Edit a.py then re-read it." },
+    { "type": "tool_call", "call_id": "c1", "tool_name": "read_file", "arguments": { "path": "a.py" } },
+    { "type": "tool_result", "call_id": "c1", "status": "ok", "content": "old" },
+    { "type": "tool_call", "call_id": "c2", "tool_name": "edit_file",
+      "arguments": { "path": "a.py", "old": "x", "new": "y" } },
+    { "type": "tool_result", "call_id": "c2", "status": "ok", "content": "edited" },
+    { "type": "tool_call", "call_id": "c3", "tool_name": "read_file", "arguments": { "path": "a.py" } },
+    { "type": "tool_result", "call_id": "c3", "status": "ok", "content": "new" },
+    { "type": "agent_stop", "text": "done" }
+  ]
+}

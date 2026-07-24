@@ -1,0 +1,32 @@
+{
+  "session_id": "clean_pass",
+  "adapter": "generic",
+  "stop_reason": "completed",
+  "task": {
+    "task_id": "fix-bug",
+    "prompt": "Fix the off-by-one in paginate() and make sure tests pass."
+  },
+  "metadata": { "has_build_system": true },
+  "available_tools": [
+    { "name": "read_file", "capability": "FILE_READ",
+      "schema": { "required": ["path"], "properties": { "path": { "type": "string" } } } },
+    { "name": "edit_file", "capability": "FILE_EDIT",
+      "schema": { "required": ["path", "old", "new"] } },
+    { "name": "bash", "capability": "SHELL_EXEC",
+      "schema": { "required": ["command"] } }
+  ],
+  "events": [
+    { "type": "user_message", "text": "Fix the off-by-one in paginate() and run tests." },
+    { "type": "agent_message", "text": "I'll read the file first." },
+    { "type": "tool_call", "call_id": "c1", "tool_name": "read_file", "arguments": { "path": "src/app.py" } },
+    { "type": "tool_result", "call_id": "c1", "status": "ok", "content": "def paginate(...): ..." },
+    { "type": "agent_message", "text": "Now I'll fix the off-by-one." },
+    { "type": "tool_call", "call_id": "c2", "tool_name": "edit_file",
+      "arguments": { "path": "src/app.py", "old": "i <= n", "new": "i < n" } },
+    { "type": "tool_result", "call_id": "c2", "status": "ok", "content": "edited" },
+    { "type": "agent_message", "text": "Running the test suite to verify." },
+    { "type": "tool_call", "call_id": "c3", "tool_name": "bash", "arguments": { "command": "pytest -q" } },
+    { "type": "tool_result", "call_id": "c3", "status": "ok", "content": "3 passed" },
+    { "type": "agent_stop", "text": "Fixed the off-by-one; all tests pass." }
+  ]
+}
