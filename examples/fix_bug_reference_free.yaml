@@ -1,0 +1,16 @@
+# Reference-free task spec: only a prompt + repo, no gold data.
+#
+# With no expected_capabilities / subgoals / required_verification, every detector
+# that can degrade runs in reference-free mode (heuristic anchors + LLM-judge).
+# This is the minimal shape a live run needs.
+#
+#   evalharness live --adapter codex --task examples/fix_bug_reference_free.yaml \
+#       --repo ~/code/sample_repo --judge groq --judge-cache .judge_cache
+
+task_id: fix-divide-edge-case
+prompt: >
+  There may be an edge case in calc.py's divide() around division by zero.
+  Investigate, fix it if warranted, and make sure the existing tests still pass.
+
+repo:
+  path: ~/code/sample_repo

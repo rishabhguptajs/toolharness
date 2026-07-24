@@ -5,6 +5,7 @@ reference-based mode. Every reference field is optional; absent -> reference-fre
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from agent_eval_harness.core.capability import CanonicalCapability, coerce_capability
@@ -60,3 +61,13 @@ class TaskSpec:
             ],
             allowed_destructive=list(data.get("allowed_destructive", [])),
         )
+
+    @classmethod
+    def from_yaml(cls, path: str | Path) -> TaskSpec:
+        """Load a TaskSpec from a YAML (or JSON) file — the ``--task spec.yaml`` path."""
+        import yaml
+
+        raw = yaml.safe_load(Path(path).read_text())
+        if raw is not None and not isinstance(raw, dict):
+            raise ValueError(f"Task spec {path} must be a mapping, got {type(raw).__name__}.")
+        return cls.from_dict(raw)
