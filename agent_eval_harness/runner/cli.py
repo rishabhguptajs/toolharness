@@ -66,6 +66,18 @@ def _cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_benchmark(args: argparse.Namespace) -> int:
+    from agent_eval_harness.eval.benchmark import bfcl_report, format_report
+
+    judge = build_judge(args.judge, cache_dir=args.judge_cache) if args.judge else None
+    report = bfcl_report(args.data, judge=judge, limit=args.limit)
+    print(format_report(report))
+    if args.json:
+        Path(args.json).write_text(json.dumps(report, indent=2))
+        print(f"wrote benchmark report -> {args.json}")
+    return 0
+
+
 def _cmd_compare(args: argparse.Namespace) -> int:
     pairs = []
     for trace in args.traces:
@@ -106,6 +118,14 @@ def build_parser() -> argparse.ArgumentParser:
     _add_judge_args(compare)
     compare.add_argument("--html", required=True, help="write the comparison dashboard here")
     compare.set_defaults(func=_cmd_compare)
+
+    bench = sub.add_parser("benchmark", help="validate detectors against a public benchmark")
+    bench.add_argument("dataset", choices=["bfcl"], help="benchmark to run")
+    bench.add_argument("--data", required=True, help="path to the benchmark data directory")
+    bench.add_argument("--limit", type=int, default=None, help="cap cases per category")
+    _add_judge_args(bench)
+    bench.add_argument("--json", default=None, help="write the benchmark report JSON here")
+    bench.set_defaults(func=_cmd_benchmark)
     return parser
 
 
