@@ -151,8 +151,11 @@ def test_openai_compatible_judge_builds_request_and_parses(monkeypatch):
     assert captured["url"].endswith("/chat/completions")
     # Authorization header present (case-insensitive key).
     assert any(k.lower() == "authorization" for k in captured["headers"])
+    # User-Agent is required — Cloudflare 403s the default "Python-urllib" agent.
+    ua = next(v for k, v in captured["headers"].items() if k.lower() == "user-agent")
+    assert "agent-eval-harness" in ua
     assert captured["body"]["temperature"] == 0
-    assert captured["body"]["model"] == "moonshotai/kimi-k2-instruct"
+    assert captured["body"]["model"] == "qwen/qwen3.6-27b"
     assert captured["body"]["messages"][-1]["content"] == "judge this"
 
 

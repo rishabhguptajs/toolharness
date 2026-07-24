@@ -42,7 +42,7 @@ model call; ambiguous cases escalate to a **provider-agnostic LLM judge**. The
 judge is deliberately independent of the agents under test (never Claude, GPT, or
 Gemini) to avoid self-preference bias. One `OpenAICompatibleJudge` covers Groq,
 OpenRouter, NVIDIA NIM, and local Ollama — a provider is just
-`(base_url, model, api_key_env)`; the default is **Groq + Kimi K2**. Verdicts are
+`(base_url, model, api_key_env)`; the default is **Groq + Qwen3.6-27b**. Verdicts are
 `temperature=0` + seeded and cached on disk, so re-scoring a session is
 reproducible and free.
 

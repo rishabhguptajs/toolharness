@@ -29,6 +29,8 @@ from typing import Any, Literal, Protocol, runtime_checkable
 
 Verdict = Literal["pass", "fail", "warn", "na"]
 
+_USER_AGENT = "agent-eval-harness/0.1 (+https://github.com/rishabhguptajs/agent-eval-harness)"
+
 
 class JudgeError(RuntimeError):
     """Raised when a real backend cannot produce a verdict."""
@@ -113,7 +115,7 @@ class ProviderConfig:
 PROVIDERS: dict[str, ProviderConfig] = {
     "groq": ProviderConfig(
         "groq", "https://api.groq.com/openai/v1",
-        "moonshotai/kimi-k2-instruct", "GROQ_API_KEY",
+        "qwen/qwen3.6-27b", "GROQ_API_KEY",
     ),
     "ollama": ProviderConfig(
         "ollama", "http://localhost:11434/v1", "qwen2.5", None,
@@ -156,7 +158,12 @@ class OpenAICompatibleJudge:
             ],
         }
         data = json.dumps(payload).encode("utf-8")
-        headers = {"Content-Type": "application/json"}
+        # A User-Agent is required: some providers front their API with Cloudflare,
+        # which returns 403 to the default "Python-urllib" agent.
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": _USER_AGENT,
+        }
         if self._api_key:
             headers["Authorization"] = f"Bearer {self._api_key}"
         url = self.config.base_url.rstrip("/") + "/chat/completions"
