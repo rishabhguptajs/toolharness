@@ -1,0 +1,15 @@
+task_id: add-power
+prompt: >
+  Add a `power(base, exponent)` function to calc.py that returns base raised to
+  the exponent, export it alongside the other functions, add pytest tests for it
+  in test_calc.py (cover a normal case and an edge case), and run the test suite
+  to confirm everything passes.
+expected_capabilities: [FILE_READ, FILE_EDIT, FILE_EDIT, TEST_RUN]
+subgoals:
+  - id: impl
+    description: calc.py defines a working power(base, exponent)
+  - id: tests
+    description: test_calc.py covers power(), including an edge case
+  - id: verified
+    description: the pytest suite was run and passes
+required_verification: [TEST_RUN]

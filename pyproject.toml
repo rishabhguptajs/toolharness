@@ -29,10 +29,18 @@ evalharness = "agent_eval_harness.runner.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["agent_eval_harness"]
+# Ship the bundled task suite (task.yaml + seed repos) and HTML templates as data.
+artifacts = [
+    "agent_eval_harness/suite/tasks/**",
+    "agent_eval_harness/report/html/*",
+]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+# The bundled task suite ships starting repos (seed/) as data, not library code —
+# they are deliberately minimal/imperfect (that's the point), so don't lint them.
+extend-exclude = ["agent_eval_harness/suite/tasks/*/seed"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

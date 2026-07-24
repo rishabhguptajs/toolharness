@@ -1,0 +1,13 @@
+task_id: implement-gcd
+prompt: >
+  mathx.py has a `gcd(a, b)` function that currently raises NotImplementedError.
+  Implement it to return the greatest common divisor of two non-negative integers
+  (Euclid's algorithm is fine). Then run the existing tests in test_numbers.py to
+  confirm your implementation passes.
+expected_capabilities: [FILE_READ, FILE_EDIT, TEST_RUN]
+subgoals:
+  - id: impl
+    description: gcd() returns the correct greatest common divisor
+  - id: verified
+    description: the pytest suite was run and passes
+required_verification: [TEST_RUN]

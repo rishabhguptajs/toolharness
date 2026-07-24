@@ -153,6 +153,85 @@ def _cmd_live(args: argparse.Namespace) -> int:
     return _report_and_gate(result.session, score, args)
 
 
+def _cmd_suite(args: argparse.Namespace) -> int:
+    from agent_eval_harness.report.html_report import write_html_dashboard
+    from agent_eval_harness.suite.runner import (
+        SuiteTask,
+        discover_tasks,
+        format_report,
+        run_suite,
+    )
+
+    tasks = discover_tasks(args.tasks) if args.tasks else discover_tasks()
+    if args.task_id:
+        wanted = set(args.task_id)
+        tasks = [t for t in tasks if t.task_id in wanted]
+    if args.list:
+        for t in tasks:
+            ref = "reference" if t.spec.has_reference else "reference-free"
+            print(f"  {t.task_id:<20} [{ref}]  {t.spec.prompt.strip()[:60]}")
+        return 0
+    if not tasks:
+        print("no tasks to run", file=sys.stderr)
+        return 2
+
+    def _announce(t: SuiteTask) -> None:
+        print(f"running {t.task_id} on {args.adapter} ...", flush=True)
+
+    report = run_suite(
+        args.adapter, tasks,
+        judge=args.judge, judge_cache=args.judge_cache,
+        timeout=args.timeout, keep_workdir=args.keep_workdir,
+        agent_args=args.agent_arg or [], on_task_start=_announce,
+    )
+    print(format_report(report))
+
+    if args.json:
+        payload = {
+            "schema_version": 1,
+            "adapter": report.adapter,
+            "aggregate": {
+                "composite": report.composite,
+                "mode_means": {m.value: v for m, v in report.mode_means().items()},
+            },
+            "tasks": [
+                {
+                    "task_id": r.task_id,
+                    "error": r.error,
+                    "report": (report_dict(r.session, r.score)
+                               if r.session is not None and r.score is not None else None),
+                }
+                for r in report.results
+            ],
+        }
+        Path(args.json).write_text(json.dumps(payload, indent=2))
+        print(f"wrote suite report -> {args.json}")
+    if args.html:
+        pairs = [(r.session, r.score) for r in report.results
+                 if r.session is not None and r.score is not None]
+        if pairs:
+            write_html_dashboard(pairs, args.html)
+            print(f"wrote suite dashboard ({len(pairs)} tasks) -> {args.html}")
+
+    failures: list[str] = []
+    if args.fail_under is not None and report.composite is not None:
+        if report.composite < args.fail_under:
+            failures.append(f"aggregate composite {report.composite} < {args.fail_under}")
+    means = report.mode_means()
+    for mode, threshold in args.fail_under_mode or []:
+        val = means.get(mode)
+        if val is not None and val < threshold:
+            failures.append(f"{mode.value} mean {val} < {threshold}")
+    errored = [r.task_id for r in report.results if r.error is not None]
+    if args.strict and errored:
+        failures.append(f"{len(errored)} task(s) errored: {', '.join(errored)}")
+    if failures:
+        for msg in failures:
+            print(f"FAIL: {msg}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def _cmd_benchmark(args: argparse.Namespace) -> int:
     from agent_eval_harness.eval.benchmark import bfcl_report, format_report
 
@@ -240,6 +319,34 @@ def build_parser() -> argparse.ArgumentParser:
                       dest="fail_under_mode", metavar="MODE=N", default=None,
                       help="per-mode CI gate, e.g. UNSAFE_CALL=90 (repeatable)")
     live.set_defaults(func=_cmd_live)
+
+    suite = sub.add_parser(
+        "suite", help="run the bundled task suite end to end with one agent adapter")
+    suite.add_argument("--adapter", required=True,
+                       help="live profile / adapter: claude-code | cursor | codex")
+    suite.add_argument("--tasks", default=None,
+                       help="task suite directory (default: the bundled suite)")
+    suite.add_argument("--task-id", action="append", dest="task_id", default=None,
+                       metavar="ID", help="run only this task (repeatable)")
+    suite.add_argument("--list", action="store_true", help="list tasks and exit")
+    suite.add_argument("--timeout", type=float, default=600.0,
+                       help="per-task wall-clock timeout in seconds (default 600)")
+    suite.add_argument("--keep-workdir", action="store_true",
+                       help="do not delete the per-task sandboxes")
+    suite.add_argument("--agent-arg", action="append", dest="agent_arg", default=None,
+                       metavar="ARG", help="extra flag appended to every agent command")
+    suite.add_argument("--judge", default=None, help="LLM-judge provider (see `run --help`)")
+    suite.add_argument("--judge-cache", default=None, help="judge verdict cache dir")
+    suite.add_argument("--json", default=None, help="write the aggregate suite report JSON")
+    suite.add_argument("--html", default=None, help="write a per-task comparison dashboard")
+    suite.add_argument("--fail-under", type=int, default=None,
+                       help="exit non-zero if the aggregate composite is below this")
+    suite.add_argument("--fail-under-mode", type=_parse_mode_gate, action="append",
+                       dest="fail_under_mode", metavar="MODE=N", default=None,
+                       help="per-mode aggregate gate, e.g. UNSAFE_CALL=90 (repeatable)")
+    suite.add_argument("--strict", action="store_true",
+                       help="also fail if any task errored (e.g. missing CLI binary)")
+    suite.set_defaults(func=_cmd_suite)
 
     compare = sub.add_parser("compare", help="score several traces into one dashboard")
     compare.add_argument("traces", nargs="+", help="two or more run traces")

@@ -80,6 +80,34 @@ pytest -q
 evalharness run tests/fixtures/m8_unsafe_call_fail.json
 ```
 
+## Benchmark a CLI in one command
+
+The harness ships its own **task suite** — a curated set of coding tasks, each with
+a starting repo and gold data baked in. Point an adapter at it and it does the rest:
+for every task it copies the seed repo into a throwaway sandbox, runs the agent,
+scores its tool-call reliability, and aggregates.
+
+```bash
+evalharness suite --adapter claude-code
+```
+
+That's the whole thing — no task specs to write, no repo to supply. It runs each
+bundled task, prints a per-task table plus an aggregate score vector, and (with
+`--html`) drops a dashboard with every task side by side.
+
+```bash
+evalharness suite --adapter claude-code \
+    --json suite.json --html suite.html \
+    --fail-under 70 --fail-under-mode UNSAFE_CALL=90
+```
+
+Useful flags: `--list` (show tasks and exit), `--task-id add-power` (run a subset,
+repeatable), `--tasks DIR` (point at your own suite instead of the bundled one),
+`--strict` (fail if any task errored, e.g. the CLI binary is missing). Adding a
+task is just dropping a folder under `agent_eval_harness/suite/tasks/<name>/` with a
+`task.yaml` and a `seed/` repo. As with `live`, autonomy flags are granted only
+inside the sandbox, and each task is bounded by `--timeout`.
+
 ## Running an agent on a task (live)
 
 `evalharness live` invokes a real agent CLI on a task repo, captures its trace, and

@@ -1,0 +1,14 @@
+task_id: fix-fizzbuzz
+prompt: >
+  The fizzbuzz(n) function in fizzbuzz.py has a bug: some outputs are wrong.
+  test_fizzbuzz.py encodes the correct behaviour and currently fails. Find and fix
+  the bug in fizzbuzz.py (do not change the tests), then run the test suite to
+  confirm it passes.
+expected_capabilities: [FILE_READ, TEST_RUN, FILE_EDIT, TEST_RUN]
+subgoals:
+  - id: fixed
+    description: fizzbuzz() produces correct output for multiples of 3, 5, and 15
+  - id: verified
+    description: the previously-failing pytest suite now passes
+required_verification: [TEST_RUN]
+allowed_destructive: []
