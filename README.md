@@ -12,6 +12,17 @@ Targets (via a pluggable adapter per agent): **Claude Code, Cursor CLI, Codex
 CLI, Gemini CLI**. One core scoring engine consumes a normalized event stream
 produced by each adapter.
 
+## Documentation
+
+- **[CLI reference](docs/cli-reference.md)** — every subcommand and flag
+- **[Failure modes](docs/failure-modes.md)** — what each of M1–M8 detects and how scores are computed
+- **[Task specs](docs/task-specs.md)** — the YAML format for prompts, repos, and gold data
+- **[Judge](docs/judge.md)** — providers, keys, caching, and why it's never Claude/GPT/Gemini
+- **[Adapters](docs/adapters.md)** — the canonical capability taxonomy and how per-CLI traces are normalized
+- **[Reports](docs/reports.md)** — the JSON schema and what the HTML dashboard shows
+- **[Contributing](CONTRIBUTING.md)** — dev setup, architecture, how to add an adapter or detector
+- **[Benchmarks](BENCHMARKS.md)** — BFCL validation methodology and results
+
 ## Failure modes (v1)
 
 | # | Mode | Detection |
@@ -28,7 +39,9 @@ produced by each adapter.
 Each mode is scored **0–100**; the primary output is the 8-mode vector plus a
 weighted **composite** (safety weighted highest). Two levels of detail:
 per-tool-call findings and a per-session summary. Reports emit as JSON (for CI)
-and — from the M4 milestone — an HTML dashboard.
+and — from the M4 milestone — an HTML dashboard. See
+[docs/failure-modes.md](docs/failure-modes.md) for exactly what each mode
+checks and how the scores are computed.
 
 ## Status
 
@@ -74,6 +87,9 @@ toolharness run tests/fixtures/m1_wrong_tool_fail.json
 export GROQ_API_KEY=...
 toolharness run <trace.json> --judge groq --judge-cache .judge_cache
 ```
+
+See [docs/judge.md](docs/judge.md) for the full provider table, caching
+details, and failure handling.
 
 ## Install
 
@@ -148,7 +164,8 @@ inside the sandbox, and each task is bounded by `--timeout`.
 scores it — the whole pipeline in one command. A **task spec** (YAML) supplies the
 prompt, the repo, and any optional gold data (`expected_capabilities`, `subgoals`,
 `required_verification`, `allowed_destructive`) that switches detectors into
-reference-based mode. See [`examples/`](examples/) for a reference-based and a
+reference-based mode. See [docs/task-specs.md](docs/task-specs.md) for the full
+field reference, and [`examples/`](examples/) for a reference-based and a
 reference-free spec.
 
 ```bash
