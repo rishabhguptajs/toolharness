@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from agent_eval_harness.core.capability import CanonicalCapability
-from agent_eval_harness.core.taskspec import TaskSpec
-from agent_eval_harness.runner.cli import build_parser, evaluate_path, main
+from evalharness.core.capability import CanonicalCapability
+from evalharness.core.taskspec import TaskSpec
+from evalharness.runner.cli import build_parser, evaluate_path, main
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -99,3 +99,13 @@ def test_bad_mode_name_is_rejected():
         parser.parse_args([
             "run", "x.json", "--fail-under-mode", "NOT_A_MODE=50",
         ])
+
+
+def test_missing_judge_key_reports_cleanly(capsys, monkeypatch):
+    """BYO-key: an unset credential must be a readable message, not a traceback."""
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    rc = main(["run", str(FIXTURES / "clean_pass.json"), "--judge", "groq"])
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "GROQ_API_KEY is not set" in err
+    assert "your own API key" in err

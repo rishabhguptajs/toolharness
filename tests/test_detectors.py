@@ -6,9 +6,9 @@ from __future__ import annotations
 
 import pytest
 
-from agent_eval_harness.core.findings import FailureMode
-from agent_eval_harness.detectors import ALL_DETECTORS, DETERMINISTIC_DETECTORS
-from agent_eval_harness.scoring.engine import SessionScore, evaluate_session
+from evalharness.core.findings import FailureMode
+from evalharness.detectors import ALL_DETECTORS, DETERMINISTIC_DETECTORS
+from evalharness.scoring.engine import SessionScore, evaluate_session
 
 
 def run(session) -> SessionScore:

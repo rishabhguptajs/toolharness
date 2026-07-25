@@ -8,7 +8,7 @@ per-detector precision/recall/F1 plus a Cohen's κ for the LLM-judge.
 
 A BFCL case is a *task spec*: a user question, the advertised `function` schemas,
 and (for answerable categories) a `ground_truth` answer. The benchmark adapter
-(`agent_eval_harness/adapters/benchmarks/bfcl.py`) pairs each case's **real
+(`evalharness/adapters/benchmarks/bfcl.py`) pairs each case's **real
 function registry** with a chosen agent behavior to build scoring-ready sessions
 with a known label:
 

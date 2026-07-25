@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from agent_eval_harness.adapters import default_registry
-from agent_eval_harness.adapters.base import RunSource
-from agent_eval_harness.core.model import NormalizedSession
+from evalharness.adapters import default_registry
+from evalharness.adapters.base import RunSource
+from evalharness.core.model import NormalizedSession
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

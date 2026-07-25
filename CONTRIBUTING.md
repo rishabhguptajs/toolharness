@@ -17,7 +17,7 @@ The full green bar is three commands:
 ```bash
 pytest -q
 ruff check .
-mypy agent_eval_harness
+mypy evalharness
 ```
 
 CI (`.github/workflows/ci.yml`) runs exactly these across Python 3.10–3.12, plus a

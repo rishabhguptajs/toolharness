@@ -1,20 +1,40 @@
 [build-system]
-requires = ["hatchling"]
+# >=1.27 for PEP 639 `license`/`license-files` support.
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "agent-eval-harness"
+name = "evalharness"
 version = "0.1.0"
 description = "Scores tool-call reliability for agentic coding CLIs (Claude Code, Cursor, Codex, Gemini)."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "Apache-2.0" }
-authors = [{ name = "Rishabh" }]
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Rishabh Gupta" }]
 keywords = ["llm", "agents", "evaluation", "tool-calling", "reliability"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+    "Typing :: Typed",
+]
 dependencies = [
     "PyYAML>=6.0",
     "Jinja2>=3.1",
 ]
+
+[project.urls]
+Homepage = "https://github.com/rishabhguptajs/agent-eval-harness"
+Source = "https://github.com/rishabhguptajs/agent-eval-harness"
+Issues = "https://github.com/rishabhguptajs/agent-eval-harness/issues"
+Changelog = "https://github.com/rishabhguptajs/agent-eval-harness/releases"
 
 [project.optional-dependencies]
 dev = [
@@ -25,14 +45,14 @@ dev = [
 ]
 
 [project.scripts]
-evalharness = "agent_eval_harness.runner.cli:main"
+evalharness = "evalharness.runner.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["agent_eval_harness"]
+packages = ["evalharness"]
 # Ship the bundled task suite (task.yaml + seed repos) and HTML templates as data.
 artifacts = [
-    "agent_eval_harness/suite/tasks/**",
-    "agent_eval_harness/report/html/*",
+    "evalharness/suite/tasks/**",
+    "evalharness/report/html/*",
 ]
 
 [tool.ruff]
@@ -40,7 +60,7 @@ line-length = 100
 target-version = "py310"
 # The bundled task suite ships starting repos (seed/) as data, not library code —
 # they are deliberately minimal/imperfect (that's the point), so don't lint them.
-extend-exclude = ["agent_eval_harness/suite/tasks/*/seed"]
+extend-exclude = ["evalharness/suite/tasks/*/seed"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

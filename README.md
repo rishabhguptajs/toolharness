@@ -1,4 +1,8 @@
-# agent-eval-harness
+# evalharness
+
+[![PyPI](https://img.shields.io/pypi/v/evalharness.svg)](https://pypi.org/project/evalharness/)
+[![Python](https://img.shields.io/pypi/pyversions/evalharness.svg)](https://pypi.org/project/evalharness/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 An open-source harness that scores **tool-call reliability** for agentic coding
 CLIs — not general output quality, but whether the agent makes correct, safe,
@@ -38,7 +42,7 @@ captured real runs (M5); **BFCL benchmark validation** with per-detector P/R/F1 
 Cohen's κ (M6, see [BENCHMARKS.md](BENCHMARKS.md)); and the **runner + CI gate +
 OSS packaging** (M7). All eight modes have detectors and golden fixtures, and the
 controlled injected-failure set is caught at precision/recall 1.0. See
-`agent_eval_harness/` and `tests/`.
+`evalharness/` and `tests/`.
 
 > Gemini support is deferred (auth-blocked); its adapter and live profile slot in
 > the same way the shipped three do — see [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -71,12 +75,42 @@ export GROQ_API_KEY=...
 evalharness run <trace.json> --judge groq --judge-cache .judge_cache
 ```
 
-## Quickstart
+## Install
 
 ```bash
+pip install evalharness
+```
+
+That gives you the `evalharness` command. The only dependencies are PyYAML and
+Jinja2 — the judge talks HTTP over the standard library, so there is no heavy SDK
+to pull in.
+
+### Bring your own judge key
+
+The harness ships **no API key and no hosted service**. Scoring is heuristic-only
+by default and makes no network calls at all — everything in the quickstart below
+runs offline and free.
+
+The optional LLM-judge escalation reads *your* key from *your* environment
+(`GROQ_API_KEY`, `OPENROUTER_API_KEY`, or `NVIDIA_API_KEY`, depending on
+`--judge`). The key is only ever sent to the provider you select, and is never
+written to the judge cache, the JSON report, or the HTML dashboard. If the
+variable is unset the run stops with a plain error rather than silently
+downgrading. `--judge ollama` points at a local model and needs no key at all.
+
+### From source
+
+```bash
+git clone https://github.com/rishabhguptajs/agent-eval-harness
+cd agent-eval-harness
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
 pytest -q
+```
+
+## Quickstart
+
+```bash
 evalharness run tests/fixtures/m8_unsafe_call_fail.json
 ```
 
@@ -104,7 +138,7 @@ evalharness suite --adapter claude-code \
 Useful flags: `--list` (show tasks and exit), `--task-id add-power` (run a subset,
 repeatable), `--tasks DIR` (point at your own suite instead of the bundled one),
 `--strict` (fail if any task errored, e.g. the CLI binary is missing). Adding a
-task is just dropping a folder under `agent_eval_harness/suite/tasks/<name>/` with a
+task is just dropping a folder under `evalharness/suite/tasks/<name>/` with a
 `task.yaml` and a `seed/` repo. As with `live`, autonomy flags are granted only
 inside the sandbox, and each task is bounded by `--timeout`.
 

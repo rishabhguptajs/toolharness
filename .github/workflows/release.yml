@@ -1,0 +1,91 @@
+name: release
+
+# Publishes to PyPI via Trusted Publishing (OIDC) — no API token is stored in
+# this repo. Configure the publisher once at
+# https://pypi.org/manage/project/evalharness/settings/publishing/
+# with: owner=rishabhguptajs, repo=agent-eval-harness, workflow=release.yml,
+# environment=pypi (and environment=testpypi on TestPyPI for the dry run).
+#
+# Cut a release by publishing a GitHub Release whose tag is `vX.Y.Z`; use the
+# manual "Run workflow" button to push a build to TestPyPI first.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Where to publish
+        required: true
+        default: testpypi
+        type: choice
+        options: [testpypi, pypi]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Never ship something the gate would reject.
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Test
+        run: pytest -q
+
+      # The tag is the source of truth for the version; a mismatch here is much
+      # cheaper to catch than a wrong version permanently occupying PyPI.
+      - name: Verify tag matches package version
+        if: github.event_name == 'release'
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(python -c 'import evalharness; print(evalharness.__version__)')"
+          test "$tag" = "$pkg" || {
+            echo "tag $tag != evalharness.__version__ $pkg"; exit 1;
+          }
+
+      - name: Build
+        run: |
+          pip install build twine
+          python -m build
+          twine check dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  testpypi:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi'
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write   # required for Trusted Publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  pypi:
+    needs: build
+    if: github.event_name == 'release' || inputs.target == 'pypi'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write   # required for Trusted Publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

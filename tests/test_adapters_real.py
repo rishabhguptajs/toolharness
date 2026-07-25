@@ -12,10 +12,10 @@ from pathlib import Path
 
 import pytest
 
-from agent_eval_harness.adapters import default_registry
-from agent_eval_harness.adapters.base import RunSource
-from agent_eval_harness.core.capability import CanonicalCapability
-from agent_eval_harness.core.model import NormalizedSession
+from evalharness.adapters import default_registry
+from evalharness.adapters.base import RunSource
+from evalharness.core.capability import CanonicalCapability
+from evalharness.core.model import NormalizedSession
 
 REAL = Path(__file__).parent / "fixtures" / "real"
 
@@ -158,11 +158,11 @@ def test_codex_shapes_agree_on_tool_count():
 # --- end-to-end scoring -----------------------------------------------------------
 
 def test_real_capture_scores_end_to_end(tmp_path):
-    from agent_eval_harness.detectors import ALL_DETECTORS
-    from agent_eval_harness.detectors.base import DetectorContext
-    from agent_eval_harness.report.html_report import write_html_report
-    from agent_eval_harness.report.json_report import write_json_report
-    from agent_eval_harness.scoring.engine import evaluate_session
+    from evalharness.detectors import ALL_DETECTORS
+    from evalharness.detectors.base import DetectorContext
+    from evalharness.report.html_report import write_html_report
+    from evalharness.report.json_report import write_json_report
+    from evalharness.scoring.engine import evaluate_session
 
     s = _parse("cursor/stream.jsonl")
     score = evaluate_session(s, ALL_DETECTORS, DetectorContext(judge=None))

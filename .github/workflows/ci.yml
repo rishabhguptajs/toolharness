@@ -24,7 +24,7 @@ jobs:
       - name: Lint (ruff)
         run: ruff check .
       - name: Type-check (mypy)
-        run: mypy agent_eval_harness
+        run: mypy evalharness
       - name: Test (pytest)
         run: pytest -q
       # Smoke-test the CI gate end to end: an unsafe run must fail its safety gate.

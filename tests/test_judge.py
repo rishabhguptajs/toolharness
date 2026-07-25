@@ -8,17 +8,17 @@ import json
 
 import pytest
 
-from agent_eval_harness.adapters.base import RunSource
-from agent_eval_harness.adapters.generic import GenericToolTraceAdapter
-from agent_eval_harness.core.findings import FailureMode
-from agent_eval_harness.detectors import (
+from evalharness.adapters.base import RunSource
+from evalharness.adapters.generic import GenericToolTraceAdapter
+from evalharness.core.findings import FailureMode
+from evalharness.detectors import (
     IgnoredOutputDetector,
     PrematureStopDetector,
     UnsafeCallDetector,
     WrongToolDetector,
 )
-from agent_eval_harness.detectors.base import DetectorContext
-from agent_eval_harness.detectors.judge import (
+from evalharness.detectors.base import DetectorContext
+from evalharness.detectors.judge import (
     PROVIDERS,
     CachingJudge,
     JudgeError,
@@ -142,7 +142,7 @@ def test_openai_compatible_judge_builds_request_and_parses(monkeypatch):
         return _FakeResp({"choices": [{"message": {"content": content}}]})
 
     monkeypatch.setattr(
-        "agent_eval_harness.detectors.judge.urllib.request.urlopen", fake_urlopen
+        "evalharness.detectors.judge.urllib.request.urlopen", fake_urlopen
     )
     judge = OpenAICompatibleJudge(PROVIDERS["groq"])
     verdict = judge.ask(req("m1_wrong_tool", "judge this"))
@@ -153,7 +153,7 @@ def test_openai_compatible_judge_builds_request_and_parses(monkeypatch):
     assert any(k.lower() == "authorization" for k in captured["headers"])
     # User-Agent is required — Cloudflare 403s the default "Python-urllib" agent.
     ua = next(v for k, v in captured["headers"].items() if k.lower() == "user-agent")
-    assert "agent-eval-harness" in ua
+    assert "evalharness" in ua
     assert captured["body"]["temperature"] == 0
     assert captured["body"]["model"] == "qwen/qwen3.6-27b"
     assert captured["body"]["messages"][-1]["content"] == "judge this"
@@ -166,7 +166,7 @@ def test_openai_compatible_judge_raises_on_bad_payload(monkeypatch):
         return _FakeResp({"unexpected": True})
 
     monkeypatch.setattr(
-        "agent_eval_harness.detectors.judge.urllib.request.urlopen", fake_urlopen
+        "evalharness.detectors.judge.urllib.request.urlopen", fake_urlopen
     )
     with pytest.raises(JudgeError):
         OpenAICompatibleJudge(PROVIDERS["groq"]).ask(req())

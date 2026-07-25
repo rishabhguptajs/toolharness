@@ -9,9 +9,9 @@ from pathlib import Path
 
 import pytest
 
-from agent_eval_harness.core.capability import CanonicalCapability
-from agent_eval_harness.core.taskspec import TaskSpec
-from agent_eval_harness.runner.live import (
+from evalharness.core.capability import CanonicalCapability
+from evalharness.core.taskspec import TaskSpec
+from evalharness.runner.live import (
     PROFILES,
     InvocationProfile,
     prepare_workdir,

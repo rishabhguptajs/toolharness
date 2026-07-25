@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from agent_eval_harness.core.capability import CanonicalCapability
-from agent_eval_harness.core.model import EventType
+from evalharness.core.capability import CanonicalCapability
+from evalharness.core.model import EventType
 
 
 def test_clean_pass_parses(session_loader):
