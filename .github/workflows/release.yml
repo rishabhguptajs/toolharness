@@ -3,7 +3,7 @@ name: release
 # Publishes to PyPI via Trusted Publishing (OIDC) — no API token is stored in
 # this repo. Configure the publisher once at
 # https://pypi.org/manage/project/evalharness/settings/publishing/
-# with: owner=rishabhguptajs, repo=agent-eval-harness, workflow=release.yml,
+# with: owner=rishabhguptajs, repo=evalharness, workflow=release.yml,
 # environment=pypi (and environment=testpypi on TestPyPI for the dry run).
 #
 # Cut a release by publishing a GitHub Release whose tag is `vX.Y.Z`; use the

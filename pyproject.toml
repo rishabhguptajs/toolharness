@@ -31,10 +31,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/rishabhguptajs/agent-eval-harness"
-Source = "https://github.com/rishabhguptajs/agent-eval-harness"
-Issues = "https://github.com/rishabhguptajs/agent-eval-harness/issues"
-Changelog = "https://github.com/rishabhguptajs/agent-eval-harness/releases"
+Homepage = "https://github.com/rishabhguptajs/evalharness"
+Source = "https://github.com/rishabhguptajs/evalharness"
+Issues = "https://github.com/rishabhguptajs/evalharness/issues"
+Changelog = "https://github.com/rishabhguptajs/evalharness/releases"
 
 [project.optional-dependencies]
 dev = [

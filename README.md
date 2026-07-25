@@ -101,8 +101,8 @@ downgrading. `--judge ollama` points at a local model and needs no key at all.
 ### From source
 
 ```bash
-git clone https://github.com/rishabhguptajs/agent-eval-harness
-cd agent-eval-harness
+git clone https://github.com/rishabhguptajs/evalharness
+cd evalharness
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
 pytest -q

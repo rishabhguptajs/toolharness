@@ -29,7 +29,7 @@ from typing import Any, Literal, Protocol, runtime_checkable
 
 Verdict = Literal["pass", "fail", "warn", "na"]
 
-_USER_AGENT = "evalharness/0.1 (+https://github.com/rishabhguptajs/agent-eval-harness)"
+_USER_AGENT = "evalharness/0.1 (+https://github.com/rishabhguptajs/evalharness)"
 
 
 class JudgeError(RuntimeError):
