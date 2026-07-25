@@ -1,7 +1,9 @@
 """M5: parser tests over *captured real* CLI output.
 
-Fixtures under tests/fixtures/real/ are verbatim captures from real runs of each
-CLI on the sample repo task ("read README, add a CHANGELOG entry, run pytest").
+Fixtures under tests/fixtures/real/ are captures from real runs of each CLI on
+the sample repo task ("read README, add a CHANGELOG entry, run pytest"), then
+scrubbed of local and third-party content — see that directory's README.md.
+The event *shapes* are untouched, which is what these parsers are tested on.
 Each test asserts the adapter auto-selects, parses a scoring-ready session, and
 links every result back to its call.
 """
@@ -77,9 +79,12 @@ def test_claude_sdk_full_fidelity():
     assert s.adapter == "claude-code"
     assert s.metadata["mode"] == "sdk"
     assert s.stop_reason == "completed"
-    # init advertised the full tool registry -> M3 has ground truth
-    assert len(s.available_tools) == 30
+    # init advertised a tool registry -> M3 has ground truth to check against.
+    # (The captured registry is scrubbed to the public tool set; what matters is
+    # that it is non-empty and covers every tool this run actually calls.)
+    assert s.available_tools
     assert {"Read", "Write", "Bash", "Edit"} <= s.available_tool_names
+    assert {c.raw_tool_name for c in s.tool_calls} <= s.available_tool_names
     caps = [c.capability for c in s.tool_calls]
     assert caps[0] == CanonicalCapability.FILE_READ
     assert CanonicalCapability.FILE_WRITE in caps
