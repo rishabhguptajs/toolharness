@@ -8,17 +8,17 @@ import json
 
 import pytest
 
-from evalharness.adapters.base import RunSource
-from evalharness.adapters.generic import GenericToolTraceAdapter
-from evalharness.core.findings import FailureMode
-from evalharness.detectors import (
+from toolharness.adapters.base import RunSource
+from toolharness.adapters.generic import GenericToolTraceAdapter
+from toolharness.core.findings import FailureMode
+from toolharness.detectors import (
     IgnoredOutputDetector,
     PrematureStopDetector,
     UnsafeCallDetector,
     WrongToolDetector,
 )
-from evalharness.detectors.base import DetectorContext
-from evalharness.detectors.judge import (
+from toolharness.detectors.base import DetectorContext
+from toolharness.detectors.judge import (
     PROVIDERS,
     CachingJudge,
     JudgeError,
@@ -142,7 +142,7 @@ def test_openai_compatible_judge_builds_request_and_parses(monkeypatch):
         return _FakeResp({"choices": [{"message": {"content": content}}]})
 
     monkeypatch.setattr(
-        "evalharness.detectors.judge.urllib.request.urlopen", fake_urlopen
+        "toolharness.detectors.judge.urllib.request.urlopen", fake_urlopen
     )
     judge = OpenAICompatibleJudge(PROVIDERS["groq"])
     verdict = judge.ask(req("m1_wrong_tool", "judge this"))
@@ -153,7 +153,7 @@ def test_openai_compatible_judge_builds_request_and_parses(monkeypatch):
     assert any(k.lower() == "authorization" for k in captured["headers"])
     # User-Agent is required — Cloudflare 403s the default "Python-urllib" agent.
     ua = next(v for k, v in captured["headers"].items() if k.lower() == "user-agent")
-    assert "evalharness" in ua
+    assert "toolharness" in ua
     assert captured["body"]["temperature"] == 0
     assert captured["body"]["model"] == "qwen/qwen3.6-27b"
     assert captured["body"]["messages"][-1]["content"] == "judge this"
@@ -166,7 +166,7 @@ def test_openai_compatible_judge_raises_on_bad_payload(monkeypatch):
         return _FakeResp({"unexpected": True})
 
     monkeypatch.setattr(
-        "evalharness.detectors.judge.urllib.request.urlopen", fake_urlopen
+        "toolharness.detectors.judge.urllib.request.urlopen", fake_urlopen
     )
     with pytest.raises(JudgeError):
         OpenAICompatibleJudge(PROVIDERS["groq"]).ask(req())

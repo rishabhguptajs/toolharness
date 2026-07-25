@@ -4,18 +4,18 @@ from __future__ import annotations
 
 import re
 
-from evalharness.adapters.base import RunSource
-from evalharness.adapters.generic import GenericToolTraceAdapter
-from evalharness.core.findings import FailureMode
-from evalharness.detectors import ALL_DETECTORS
-from evalharness.report.html_report import (
+from toolharness.adapters.base import RunSource
+from toolharness.adapters.generic import GenericToolTraceAdapter
+from toolharness.core.findings import FailureMode
+from toolharness.detectors import ALL_DETECTORS
+from toolharness.report.html_report import (
     build_view,
     render_dashboard,
     write_html_dashboard,
     write_html_report,
 )
-from evalharness.scoring.engine import evaluate_session
-from evalharness.test_agents.agents import BugfixAgent, SearchRefactorAgent
+from toolharness.scoring.engine import evaluate_session
+from toolharness.test_agents.agents import BugfixAgent, SearchRefactorAgent
 
 _ADAPTER = GenericToolTraceAdapter()
 

@@ -2,8 +2,8 @@ name: release
 
 # Publishes to PyPI via Trusted Publishing (OIDC) — no API token is stored in
 # this repo. Configure the publisher once at
-# https://pypi.org/manage/project/evalharness/settings/publishing/
-# with: owner=rishabhguptajs, repo=evalharness, workflow=release.yml,
+# https://pypi.org/manage/project/toolharness/settings/publishing/
+# with: owner=rishabhguptajs, repo=toolharness, workflow=release.yml,
 # environment=pypi (and environment=testpypi on TestPyPI for the dry run).
 #
 # Cut a release by publishing a GitHub Release whose tag is `vX.Y.Z`; use the
@@ -44,9 +44,9 @@ jobs:
         if: github.event_name == 'release'
         run: |
           tag="${GITHUB_REF_NAME#v}"
-          pkg="$(python -c 'import evalharness; print(evalharness.__version__)')"
+          pkg="$(python -c 'import toolharness; print(toolharness.__version__)')"
           test "$tag" = "$pkg" || {
-            echo "tag $tag != evalharness.__version__ $pkg"; exit 1;
+            echo "tag $tag != toolharness.__version__ $pkg"; exit 1;
           }
 
       - name: Build

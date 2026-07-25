@@ -4,7 +4,7 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "evalharness"
+name = "toolharness"
 version = "0.1.0"
 description = "Scores tool-call reliability for agentic coding CLIs (Claude Code, Cursor, Codex, Gemini)."
 readme = "README.md"
@@ -31,10 +31,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/rishabhguptajs/evalharness"
-Source = "https://github.com/rishabhguptajs/evalharness"
-Issues = "https://github.com/rishabhguptajs/evalharness/issues"
-Changelog = "https://github.com/rishabhguptajs/evalharness/releases"
+Homepage = "https://github.com/rishabhguptajs/toolharness"
+Source = "https://github.com/rishabhguptajs/toolharness"
+Issues = "https://github.com/rishabhguptajs/toolharness/issues"
+Changelog = "https://github.com/rishabhguptajs/toolharness/releases"
 
 [project.optional-dependencies]
 dev = [
@@ -45,14 +45,14 @@ dev = [
 ]
 
 [project.scripts]
-evalharness = "evalharness.runner.cli:main"
+toolharness = "toolharness.runner.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["evalharness"]
+packages = ["toolharness"]
 # Ship the bundled task suite (task.yaml + seed repos) and HTML templates as data.
 artifacts = [
-    "evalharness/suite/tasks/**",
-    "evalharness/report/html/*",
+    "toolharness/suite/tasks/**",
+    "toolharness/report/html/*",
 ]
 
 [tool.ruff]
@@ -60,7 +60,7 @@ line-length = 100
 target-version = "py310"
 # The bundled task suite ships starting repos (seed/) as data, not library code —
 # they are deliberately minimal/imperfect (that's the point), so don't lint them.
-extend-exclude = ["evalharness/suite/tasks/*/seed"]
+extend-exclude = ["toolharness/suite/tasks/*/seed"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

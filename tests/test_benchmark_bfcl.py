@@ -4,22 +4,22 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from evalharness.adapters.benchmarks.bfcl import (
+from toolharness.adapters.benchmarks.bfcl import (
     load_bfcl,
     session_correct,
     session_hallucinated,
     session_wrong_args,
 )
-from evalharness.detectors import HallucinatedCallDetector, WrongArgsDetector
-from evalharness.detectors.base import DetectorContext
-from evalharness.detectors.judge import JudgeVerdict, StubJudge
-from evalharness.eval.benchmark import (
+from toolharness.detectors import HallucinatedCallDetector, WrongArgsDetector
+from toolharness.detectors.base import DetectorContext
+from toolharness.detectors.judge import JudgeVerdict, StubJudge
+from toolharness.eval.benchmark import (
     bfcl_report,
     m2_wrong_args_metrics,
     m3_hallucination_metrics,
     relevance_kappa,
 )
-from evalharness.eval.metrics import binary_metrics, cohen_kappa
+from toolharness.eval.metrics import binary_metrics, cohen_kappa
 
 BFCL = Path(__file__).parent / "fixtures" / "benchmarks" / "bfcl"
 _CTX = DetectorContext()

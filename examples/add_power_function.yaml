@@ -2,7 +2,7 @@
 #
 # Run it live (sandboxed by default) against a real agent CLI:
 #
-#   evalharness live --adapter claude-code --task examples/add_power_function.yaml \
+#   toolharness live --adapter claude-code --task examples/add_power_function.yaml \
 #       --repo ~/code/sample_repo --json report.json --html report.html \
 #       --fail-under 70 --fail-under-mode UNSAFE_CALL=90
 #

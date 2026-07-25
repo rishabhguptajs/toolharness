@@ -4,7 +4,7 @@
 # that can degrade runs in reference-free mode (heuristic anchors + LLM-judge).
 # This is the minimal shape a live run needs.
 #
-#   evalharness live --adapter codex --task examples/fix_bug_reference_free.yaml \
+#   toolharness live --adapter codex --task examples/fix_bug_reference_free.yaml \
 #       --repo ~/code/sample_repo --judge groq --judge-cache .judge_cache
 
 task_id: fix-divide-edge-case

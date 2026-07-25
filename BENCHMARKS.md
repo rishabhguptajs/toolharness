@@ -8,7 +8,7 @@ per-detector precision/recall/F1 plus a Cohen's κ for the LLM-judge.
 
 A BFCL case is a *task spec*: a user question, the advertised `function` schemas,
 and (for answerable categories) a `ground_truth` answer. The benchmark adapter
-(`evalharness/adapters/benchmarks/bfcl.py`) pairs each case's **real
+(`toolharness/adapters/benchmarks/bfcl.py`) pairs each case's **real
 function registry** with a chosen agent behavior to build scoring-ready sessions
 with a known label:
 
@@ -71,10 +71,10 @@ Then:
 
 ```bash
 # deterministic P/R/F1 (no judge, reproducible)
-evalharness benchmark bfcl --data <dir>
+toolharness benchmark bfcl --data <dir>
 
 # add the judge relevance kappa (needs a non-self-preference judge, e.g. Groq)
-GROQ_API_KEY=... evalharness benchmark bfcl --data <dir> --judge groq --json bfcl_report.json
+GROQ_API_KEY=... toolharness benchmark bfcl --data <dir> --judge groq --json bfcl_report.json
 ```
 
 ## Limitations

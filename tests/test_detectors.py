@@ -6,9 +6,9 @@ from __future__ import annotations
 
 import pytest
 
-from evalharness.core.findings import FailureMode
-from evalharness.detectors import ALL_DETECTORS, DETERMINISTIC_DETECTORS
-from evalharness.scoring.engine import SessionScore, evaluate_session
+from toolharness.core.findings import FailureMode
+from toolharness.detectors import ALL_DETECTORS, DETERMINISTIC_DETECTORS
+from toolharness.scoring.engine import SessionScore, evaluate_session
 
 
 def run(session) -> SessionScore:

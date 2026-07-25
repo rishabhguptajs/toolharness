@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import json
 
-from evalharness import REPORT_SCHEMA_VERSION
-from evalharness.detectors import DETERMINISTIC_DETECTORS
-from evalharness.report.json_report import report_dict
-from evalharness.scoring.engine import evaluate_session
+from toolharness import REPORT_SCHEMA_VERSION
+from toolharness.detectors import DETERMINISTIC_DETECTORS
+from toolharness.report.json_report import report_dict
+from toolharness.scoring.engine import evaluate_session
 
 
 def _report(session):

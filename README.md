@@ -1,7 +1,7 @@
-# evalharness
+# toolharness
 
-[![PyPI](https://img.shields.io/pypi/v/evalharness.svg)](https://pypi.org/project/evalharness/)
-[![Python](https://img.shields.io/pypi/pyversions/evalharness.svg)](https://pypi.org/project/evalharness/)
+[![PyPI](https://img.shields.io/pypi/v/toolharness.svg)](https://pypi.org/project/toolharness/)
+[![Python](https://img.shields.io/pypi/pyversions/toolharness.svg)](https://pypi.org/project/toolharness/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 An open-source harness that scores **tool-call reliability** for agentic coding
@@ -42,18 +42,18 @@ captured real runs (M5); **BFCL benchmark validation** with per-detector P/R/F1 
 Cohen's κ (M6, see [BENCHMARKS.md](BENCHMARKS.md)); and the **runner + CI gate +
 OSS packaging** (M7). All eight modes have detectors and golden fixtures, and the
 controlled injected-failure set is caught at precision/recall 1.0. See
-`evalharness/` and `tests/`.
+`toolharness/` and `tests/`.
 
 > Gemini support is deferred (auth-blocked); its adapter and live profile slot in
 > the same way the shipped three do — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### HTML dashboard
 
-`evalharness run <trace> --html report.html` writes a single self-contained file
+`toolharness run <trace> --html report.html` writes a single self-contained file
 (inline CSS/JS, no external requests) with the 8-mode score bars + an SVG radar, a
 tool-call timeline color-coded by the modes each call triggered, click-to-expand
 drill-down (reasoning, arguments, result, and every finding's rationale + evidence
-trail), and mode/verdict filters. `evalharness compare a.json b.json --html
+trail), and mode/verdict filters. `toolharness compare a.json b.json --html
 cmp.html` renders several sessions into one page for agent-A-vs-B comparison.
 
 ### The judge
@@ -69,19 +69,19 @@ reproducible and free.
 
 ```bash
 # heuristic-only (no network, default):
-evalharness run tests/fixtures/m1_wrong_tool_fail.json
+toolharness run tests/fixtures/m1_wrong_tool_fail.json
 # with the judge escalation path (needs GROQ_API_KEY):
 export GROQ_API_KEY=...
-evalharness run <trace.json> --judge groq --judge-cache .judge_cache
+toolharness run <trace.json> --judge groq --judge-cache .judge_cache
 ```
 
 ## Install
 
 ```bash
-pip install evalharness
+pip install toolharness
 ```
 
-That gives you the `evalharness` command. The only dependencies are PyYAML and
+That gives you the `toolharness` command. The only dependencies are PyYAML and
 Jinja2 — the judge talks HTTP over the standard library, so there is no heavy SDK
 to pull in.
 
@@ -101,8 +101,8 @@ downgrading. `--judge ollama` points at a local model and needs no key at all.
 ### From source
 
 ```bash
-git clone https://github.com/rishabhguptajs/evalharness
-cd evalharness
+git clone https://github.com/rishabhguptajs/toolharness
+cd toolharness
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
 pytest -q
@@ -111,7 +111,7 @@ pytest -q
 ## Quickstart
 
 ```bash
-evalharness run tests/fixtures/m8_unsafe_call_fail.json
+toolharness run tests/fixtures/m8_unsafe_call_fail.json
 ```
 
 ## Benchmark a CLI in one command
@@ -122,7 +122,7 @@ for every task it copies the seed repo into a throwaway sandbox, runs the agent,
 scores its tool-call reliability, and aggregates.
 
 ```bash
-evalharness suite --adapter claude-code
+toolharness suite --adapter claude-code
 ```
 
 That's the whole thing — no task specs to write, no repo to supply. It runs each
@@ -130,7 +130,7 @@ bundled task, prints a per-task table plus an aggregate score vector, and (with
 `--html`) drops a dashboard with every task side by side.
 
 ```bash
-evalharness suite --adapter claude-code \
+toolharness suite --adapter claude-code \
     --json suite.json --html suite.html \
     --fail-under 70 --fail-under-mode UNSAFE_CALL=90
 ```
@@ -138,13 +138,13 @@ evalharness suite --adapter claude-code \
 Useful flags: `--list` (show tasks and exit), `--task-id add-power` (run a subset,
 repeatable), `--tasks DIR` (point at your own suite instead of the bundled one),
 `--strict` (fail if any task errored, e.g. the CLI binary is missing). Adding a
-task is just dropping a folder under `evalharness/suite/tasks/<name>/` with a
+task is just dropping a folder under `toolharness/suite/tasks/<name>/` with a
 `task.yaml` and a `seed/` repo. As with `live`, autonomy flags are granted only
 inside the sandbox, and each task is bounded by `--timeout`.
 
 ## Running an agent on a task (live)
 
-`evalharness live` invokes a real agent CLI on a task repo, captures its trace, and
+`toolharness live` invokes a real agent CLI on a task repo, captures its trace, and
 scores it — the whole pipeline in one command. A **task spec** (YAML) supplies the
 prompt, the repo, and any optional gold data (`expected_capabilities`, `subgoals`,
 `required_verification`, `allowed_destructive`) that switches detectors into
@@ -152,7 +152,7 @@ reference-based mode. See [`examples/`](examples/) for a reference-based and a
 reference-free spec.
 
 ```bash
-evalharness live --adapter claude-code --task examples/add_power_function.yaml \
+toolharness live --adapter claude-code --task examples/add_power_function.yaml \
     --repo ~/code/sample_repo \
     --json report.json --html report.html \
     --fail-under 70 --fail-under-mode UNSAFE_CALL=90
@@ -170,7 +170,7 @@ To score a **pre-captured** trace instead of invoking a CLI, use `run` (attach a
 spec with `--task` for reference-based scoring):
 
 ```bash
-evalharness run captured.jsonl --adapter codex --task examples/add_power_function.yaml
+toolharness run captured.jsonl --adapter codex --task examples/add_power_function.yaml
 ```
 
 ## CI gate

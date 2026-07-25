@@ -2,7 +2,7 @@
 
 These are captures from real runs of each agent CLI on one sample-repo task
 ("read the README, add a CHANGELOG entry, run pytest"). They exist to test the
-**parsers** in `evalharness/adapters/` against output shapes that no
+**parsers** in `toolharness/adapters/` against output shapes that no
 hand-written fixture would get right — nested content blocks, result linking,
 degraded OTEL records, and the two on-disk shapes Codex emits.
 

@@ -24,7 +24,7 @@ jobs:
       - name: Lint (ruff)
         run: ruff check .
       - name: Type-check (mypy)
-        run: mypy evalharness
+        run: mypy toolharness
       - name: Test (pytest)
         run: pytest -q
       # Smoke-test the CI gate end to end: an unsafe run must fail its safety gate.
@@ -32,7 +32,7 @@ jobs:
       - name: CLI gate smoke test
         run: |
           set +e
-          evalharness run tests/fixtures/m8_unsafe_call_fail.json --fail-under-mode UNSAFE_CALL=90
+          toolharness run tests/fixtures/m8_unsafe_call_fail.json --fail-under-mode UNSAFE_CALL=90
           code=$?
           set -e
           test "$code" -eq 1 || (echo "expected exit 1 from safety gate, got $code" && exit 1)

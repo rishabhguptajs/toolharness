@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from evalharness.suite.runner import (
+from toolharness.suite.runner import (
     BUNDLED_TASKS_DIR,
     discover_tasks,
     format_report,
@@ -71,7 +71,7 @@ def test_run_suite_aggregates_across_tasks():
     assert report.composite is not None
     means = report.mode_means()
     # Missing-verification is applicable (a mutation + a test run happened).
-    from evalharness.core.findings import FailureMode
+    from toolharness.core.findings import FailureMode
     assert means[FailureMode.MISSING_VERIFICATION] is not None
 
 

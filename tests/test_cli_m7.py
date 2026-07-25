@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from evalharness.core.capability import CanonicalCapability
-from evalharness.core.taskspec import TaskSpec
-from evalharness.runner.cli import build_parser, evaluate_path, main
+from toolharness.core.capability import CanonicalCapability
+from toolharness.core.taskspec import TaskSpec
+from toolharness.runner.cli import build_parser, evaluate_path, main
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

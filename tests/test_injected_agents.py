@@ -14,8 +14,8 @@ from __future__ import annotations
 
 import pytest
 
-from evalharness.core.findings import FailureMode
-from evalharness.test_agents import (
+from toolharness.core.findings import FailureMode
+from toolharness.test_agents import (
     DETERMINISTIC_MODES,
     HYBRID_MODES,
     all_agents,

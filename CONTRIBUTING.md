@@ -17,7 +17,7 @@ The full green bar is three commands:
 ```bash
 pytest -q
 ruff check .
-mypy evalharness
+mypy toolharness
 ```
 
 CI (`.github/workflows/ci.yml`) runs exactly these across Python 3.10–3.12, plus a
@@ -91,7 +91,7 @@ OTEL).
    adapter.
 
 5. **(Optional) add a live invocation profile** in `runner/live.py::PROFILES` so
-   `evalharness live --adapter my-agent` can drive the real CLI. A profile is just
+   `toolharness live --adapter my-agent` can drive the real CLI. A profile is just
    `(binary, pre_args, post_args)` assembled as `[binary, *pre, prompt, *post]`.
 
 ## Adding a detector or failure mode
